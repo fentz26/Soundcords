@@ -6,6 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
     <title>Soundcords - OAuth Callback</title>
     
     <style>
@@ -118,7 +119,7 @@
                 },
                 body: JSON.stringify({
                     code: code,
-                    redirectUri: 'https://soundcords-7133vgmmz-fentzzz.vercel.app/oauth-callback.html'
+                    redirectUri: 'https://soundcords.vercel.app/oauth-callback.html'
                 })
             })
             .then(response => response.json())
