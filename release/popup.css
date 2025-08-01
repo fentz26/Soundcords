@@ -74,9 +74,16 @@ body {
 }
 
 .logo {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.app-title {
+  height: 20px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
 }
 
 .header h1 {

@@ -18,6 +18,8 @@ Soundcords/
 │   ├── *.html          # Extension UI
 │   ├── *.css           # Extension styling
 │   ├── icons/          # Extension icons
+│   ├── logo_soundiscord_bot.png    # Main extension logo
+│   ├── text_soundcords_white.png   # App title image
 │   └── README.md       # Installation guide
 └── README.md           # This file
 ```
@@ -43,6 +45,7 @@ Soundcords/
 - **Location:** `release/`
 - **Installation:** Load unpacked in Chrome
 - **Distribution:** Ready for users
+- **Branding:** Custom logo and text images
 
 ## 🔒 Security
 
