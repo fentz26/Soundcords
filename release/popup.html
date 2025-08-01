@@ -8,146 +8,154 @@
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <div class="logo-container">
-        <img src="text_soundcords_white.png" alt="Soundcords" class="app-title">
-      </div>
-      <div class="status-indicator" id="statusIndicator"></div>
+    <!-- Start Animation Logo -->
+    <div class="start-logo" id="startLogo">
+      <img src="text_soundcords_white.png" alt="Soundcords" class="start-logo-image">
     </div>
     
-    <!-- Connection Screen -->
-    <div id="connectionScreen" class="connection-screen">
-      <div class="connection-content">
-        <h2>Connect your Discord account to get started</h2>
-        <button id="connectDiscordBtn" class="connect-button">
-          <img src="discord-logo.png" alt="Discord" class="discord-icon">connect discord account
-        </button>
-        <div class="connection-status">
-          <p class="status-text" id="connectionStatus">not connected</p>
+    <!-- Main Content (initially hidden) -->
+    <div class="main-container" id="mainContainer">
+      <div class="header">
+        <div class="logo-container">
+          <img src="text_soundcords_white.png" alt="Soundcords" class="app-title">
         </div>
+        <div class="status-indicator" id="statusIndicator"></div>
       </div>
-    </div>
-
-    <!-- Main Content (hidden initially) -->
-    <div id="mainContent" class="main-content hidden">
-      <!-- Main Page -->
-      <div id="mainPage" class="page-content active">
-        <div class="section">
-          <h2>Current Song</h2>
-          <div class="song-info" id="songInfo">
-            <div class="no-song">No song detected</div>
+      
+      <!-- Connection Screen -->
+      <div id="connectionScreen" class="connection-screen">
+        <div class="connection-content">
+          <h2>Connect your Discord account to get started</h2>
+          <button id="connectDiscordBtn" class="connect-button">
+            <img src="discord-logo.png" alt="Discord" class="discord-icon">connect discord account
+          </button>
+          <div class="connection-status">
+            <p class="status-text" id="connectionStatus">not connected</p>
           </div>
-        </div>
-        
-        <div class="section">
-          <button id="testPresence" class="test-button">Toggle Presence</button>
-        </div>
-
-        <div class="section">
-          <button id="settingsBtn" class="settings-button">Settings</button>
-        </div>
-        
-        <div class="section">
-          <button id="debugBtn" class="settings-button">Debug: Clear All Data</button>
         </div>
       </div>
 
-      <!-- Settings Page -->
-      <div id="settingsPage" class="page-content">
-        <div class="section">
-          <div class="settings-header">
-            <button id="backBtn" class="back-button">← Back</button>
-            <h2>Settings</h2>
+      <!-- Main Content (hidden initially) -->
+      <div id="mainContent" class="main-content hidden">
+        <!-- Main Page -->
+        <div id="mainPage" class="page-content active">
+          <div class="section">
+            <h2>Current Song</h2>
+            <div class="song-info" id="songInfo">
+              <div class="no-song">No song detected</div>
+            </div>
+          </div>
+          
+          <div class="section">
+            <button id="testPresence" class="test-button">Toggle Presence</button>
+          </div>
+
+          <div class="section">
+            <button id="settingsBtn" class="settings-button">Settings</button>
+          </div>
+          
+          <div class="section">
+            <button id="debugBtn" class="settings-button">Debug: Clear All Data</button>
           </div>
         </div>
 
-        <div class="section">
-          <h3>Discord Account</h3>
-          <div class="account-status" id="accountStatus">
-            <div class="status-item">
-              <span class="status-label">Status:</span>
-              <span class="status-value" id="discordStatus">Not Connected</span>
+        <!-- Settings Page -->
+        <div id="settingsPage" class="page-content">
+          <div class="section">
+            <div class="settings-header">
+              <button id="backBtn" class="back-button">← Back</button>
+              <h2>Settings</h2>
             </div>
-            <div class="status-item username-item-hidden" id="usernameItem">
-              <span class="status-label">Username:</span>
-              <span class="status-value" id="discordUsername"></span>
+          </div>
+
+          <div class="section">
+            <h3>Discord Account</h3>
+            <div class="account-status" id="accountStatus">
+              <div class="status-item">
+                <span class="status-label">Status:</span>
+                <span class="status-value" id="discordStatus">Not Connected</span>
+              </div>
+              <div class="status-item username-item-hidden" id="usernameItem">
+                <span class="status-label">Username:</span>
+                <span class="status-value" id="discordUsername"></span>
+              </div>
+              <button id="disconnectBtn" class="disconnect-button">Disconnect</button>
             </div>
-            <button id="disconnectBtn" class="disconnect-button">Disconnect</button>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Language Settings</h3>
-          <div class="language-toggle">
-            <button class="lang-btn active" data-lang="en">English</button>
-            <button class="lang-btn" data-lang="ja">日本語</button>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Presence Settings</h3>
-          <div class="setting-item">
-            <div class="setting-label">Show Browsing Status</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="showBrowsingStatus" checked aria-label="Show Browsing Status">
-              <span class="toggle-slider"></span>
-            </label>
           </div>
           
-          <div class="setting-item">
-            <div class="setting-label">Show Current Song</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="showCurrentSong" checked aria-label="Show Current Song">
-              <span class="toggle-slider"></span>
-            </label>
+          <div class="section">
+            <h3>Language Settings</h3>
+            <div class="language-toggle">
+              <button class="lang-btn active" data-lang="en">English</button>
+              <button class="lang-btn" data-lang="ja">日本語</button>
+            </div>
           </div>
           
-          <div class="setting-item">
-            <div class="setting-label">Hide while paused</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="hideWhilePaused" checked aria-label="Hide while paused">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-label">Show Timestamps</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="showTimestamps" checked aria-label="Show Timestamps">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-label">Show Cover</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="showCover" checked aria-label="Show Cover">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-label">Show Buttons</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="showButtons" checked aria-label="Show Buttons">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-label">Show Title as Presence</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="showTitleAsPresence" aria-label="Show Title as Presence">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          
-          <div class="setting-item">
-            <div class="setting-label">Show Artist as Presence</div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="showArtistAsPresence" checked aria-label="Show Artist as Presence">
-              <span class="toggle-slider"></span>
-            </label>
+          <div class="section">
+            <h3>Presence Settings</h3>
+            <div class="setting-item">
+              <div class="setting-label">Show Browsing Status</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showBrowsingStatus" checked aria-label="Show Browsing Status">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">Show Current Song</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showCurrentSong" checked aria-label="Show Current Song">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">Hide while paused</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="hideWhilePaused" checked aria-label="Hide while paused">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">Show Timestamps</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showTimestamps" checked aria-label="Show Timestamps">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">Show Cover</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showCover" checked aria-label="Show Cover">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">Show Buttons</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showButtons" checked aria-label="Show Buttons">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">Show Title as Presence</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showTitleAsPresence" aria-label="Show Title as Presence">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">Show Artist as Presence</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showArtistAsPresence" checked aria-label="Show Artist as Presence">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
