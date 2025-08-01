@@ -201,12 +201,67 @@ class SoundCloudMonitor {
       artist = artist.replace(/\s+/g, ' ').trim();
     }
     
-    const url = window.location.href;
+    // Try to extract the specific song URL from the player
+    let songUrl = window.location.href;
+    
+    // Try to find the specific song URL from the player elements
+    const songLinkSelectors = [
+      '.playbackSoundBadge__titleLink',
+      '.playbackControls__titleLink',
+      '.playControls__titleLink',
+      '.soundTitle__titleLink',
+      '[data-testid="playback-controls"] .playbackControls__titleLink',
+      '.playbackControls__title a',
+      '.playControls__title a',
+      '.soundTitle__title a'
+    ];
+    
+    for (const selector of songLinkSelectors) {
+      const linkElement = document.querySelector(selector);
+      if (linkElement && linkElement.href) {
+        songUrl = linkElement.href;
+        console.log('Found specific song URL:', songUrl);
+        break;
+      }
+    }
+    
+    // If we couldn't find a specific song URL, try to construct it from the page URL
+    if (songUrl === window.location.href) {
+      // Check if we're on a track page (individual song)
+      const trackMatch = window.location.pathname.match(/\/[^\/]+\/[^\/]+$/);
+      if (trackMatch) {
+        console.log('Using current page URL as song URL (track page)');
+      } else {
+        console.log('Warning: Could not find specific song URL, using page URL (may be playlist)');
+        
+        // Try to extract from page metadata
+        const metaUrl = document.querySelector('meta[property="og:url"]')?.content ||
+                       document.querySelector('link[rel="canonical"]')?.href;
+        if (metaUrl && metaUrl !== window.location.href) {
+          songUrl = metaUrl;
+          console.log('Found song URL from metadata:', songUrl);
+        }
+        
+        // Try to extract from structured data
+        const structuredData = document.querySelector('script[type="application/ld+json"]');
+        if (structuredData) {
+          try {
+            const data = JSON.parse(structuredData.textContent);
+            if (data.url && data.url !== window.location.href) {
+              songUrl = data.url;
+              console.log('Found song URL from structured data:', songUrl);
+            }
+          } catch (error) {
+            console.log('Could not parse structured data');
+          }
+        }
+      }
+    }
 
     // Check if audio is actually playing
     const isPlaying = this.isAudioPlaying();
 
-    console.log('Extracted song info:', { title, artist, url, isPlaying });
+    console.log('Extracted song info:', { title, artist, url: songUrl, isPlaying });
 
     if (!title || !isPlaying) {
       console.log('Missing title or not playing, returning null');
@@ -216,7 +271,7 @@ class SoundCloudMonitor {
     return {
       title: title,
       artist: artist,
-      url: url,
+      url: songUrl,
       timestamp: Date.now()
     };
   }
@@ -304,21 +359,25 @@ class SoundCloudMonitor {
   }
 
   notifyBackground(songInfo) {
-    const isActive = !!songInfo;
-    console.log(`Song ${isActive ? 'detected' : 'stopped'}:`, songInfo);
-    
-    try {
-      if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({
-          type: 'SONG_DETECTED',
-          songInfo: songInfo,
-          isActive: isActive
-        });
-      } else {
-        console.warn('Chrome runtime API not available');
-      }
-    } catch (error) {
-      console.error('Failed to send message to background script:', error);
+    if (songInfo) {
+      console.log('=== Content Script: Notifying Background ===');
+      console.log('Song URL being sent:', songInfo.url);
+      console.log('Full song info:', songInfo);
+      
+      chrome.runtime.sendMessage({
+        type: 'SONG_DETECTED',
+        songInfo: songInfo,
+        isActive: true
+      }, (response) => {
+        console.log('Background response:', response);
+      });
+    } else {
+      console.log('=== Content Script: Clearing Song ===');
+      chrome.runtime.sendMessage({
+        type: 'SONG_DETECTED',
+        songInfo: null,
+        isActive: false
+      });
     }
   }
 
