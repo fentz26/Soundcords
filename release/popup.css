@@ -213,6 +213,16 @@ body {
 /* Main Content - Hidden by default */
 .main-content {
   display: none;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.main-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .main-content.show {
@@ -281,7 +291,17 @@ body {
 /* Page Content */
 .page-content {
   display: none;
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
   animation: fadeInUp 0.5s ease-out;
+}
+
+.page-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 @keyframes fadeInUp {

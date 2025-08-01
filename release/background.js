@@ -266,7 +266,7 @@ class DiscordRPC {
       largeImageKey: 'soundcloud',
       largeImageText: 'SoundCloud',
       smallImageKey: 'play',
-      smallImageText: 'Playing',
+      smallImageText: 'Listening',
       startTimestamp: Date.now(),
       buttons: [
         {
@@ -400,7 +400,7 @@ class DiscordRichPresence {
       largeImageKey: 'soundcloud',
       largeImageText: 'SoundCloud',
       smallImageKey: 'play',
-      smallImageText: 'Playing',
+      smallImageText: 'Listening',
       startTimestamp: Date.now(),
       buttons: [
         {
@@ -790,7 +790,7 @@ class DiscordPresenceManager {
       largeImageKey: 'soundcloud',
       largeImageText: songInfo.title,
       smallImageKey: 'play',
-      smallImageText: 'Playing',
+      smallImageText: 'Listening',
       startTimestamp: Date.now()
     };
 
@@ -875,7 +875,7 @@ class DiscordPresenceManager {
         },
         body: JSON.stringify({
           name: presenceData.name,
-          type: 2, // Listening activity type
+          type: 2, // Listening activity type for music
           state: presenceData.state,
           details: presenceData.details,
           timestamps: presenceData.startTimestamp ? {

@@ -140,7 +140,7 @@ class DiscordRPC {
       largeImageKey: 'soundcloud',
       largeImageText: 'SoundCloud',
       smallImageKey: 'play',
-      smallImageText: 'Playing',
+      smallImageText: 'Listening',
       startTimestamp: Date.now(),
       buttons: [
         {

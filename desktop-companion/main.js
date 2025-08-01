@@ -195,7 +195,7 @@ class SoundcordsCompanion {
         largeImageKey: artworkUrl || 'soundcloud',
         largeImageText: songInfo.title,
         smallImageKey: 'play',
-        smallImageText: 'Playing',
+        smallImageText: 'Listening',
         startTimestamp: Date.now(),
         buttons: [
           {
@@ -205,7 +205,8 @@ class SoundcordsCompanion {
         ]
       };
 
-      await this.rpc.setActivity(presenceData);
+      // Set activity type to 2 (Listening) for music activity
+      await this.rpc.setActivity(presenceData, 2);
       this.currentPresence = presenceData;
 
       console.log('Rich Presence updated:', presenceData.details);
