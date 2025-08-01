@@ -1,7 +1,7 @@
 {
-  "name": "soundcord-extension",
+  "name": "soundcords-extension",
   "version": "1.0.0",
-  "description": "Soundcord Discord extension with secure OAuth",
+  "description": "Soundcords Discord extension with secure OAuth",
   "main": "index.js",
   "scripts": {
     "dev": "vercel dev",

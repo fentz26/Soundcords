@@ -128,7 +128,7 @@ class PopupManager {
       if (isConnected) {
         // Get the stored Discord user info
         const result = await chrome.storage.sync.get(['discordUser']);
-        const username = result.discordUser ? result.discordUser.username : 'Soundcord User';
+        const username = result.discordUser ? result.discordUser.username : 'Soundcords User';
         if (this.discordStatus) {
           this.discordStatus.textContent = username;
           this.discordStatus.style.color = '#10b981';

@@ -1,4 +1,4 @@
-# Soundcord
+# Soundcords
 
 A Chrome extension that connects your SoundCloud activity to Discord presence.
 
@@ -10,9 +10,9 @@ A Chrome extension that connects your SoundCloud activity to Discord presence.
 # Clone or create the repository
 git init
 git add .
-git commit -m "Initial commit: Soundcord Discord extension"
+git commit -m "Initial commit: Soundcords Discord extension"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/soundcord.git
+git remote add origin https://github.com/YOUR_USERNAME/soundcords.git
 git push -u origin main
 ```
 
@@ -63,7 +63,7 @@ git push -u origin main
 ## 📁 Project Structure
 
 ```
-soundcord/
+soundcords/
 ├── extension/           # Chrome extension files
 │   ├── manifest.json
 │   ├── popup.html

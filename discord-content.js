@@ -56,7 +56,7 @@ if (isOAuthRedirect()) {
         ">
           <h1 style="margin: 0 0 20px 0; font-size: 24px;">✅ Authorization Successful!</h1>
           <p style="margin: 0; font-size: 16px; opacity: 0.9;">
-            Your Discord account has been successfully connected to Soundcord.
+            Your Discord account has been successfully connected to Soundcords.
           </p>
           <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.7;">
             You can close this tab now.
