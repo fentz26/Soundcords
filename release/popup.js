@@ -1,13 +1,17 @@
 class PopupManager {
   constructor() {
     this.initializeElements();
-    this.startAnimation();
+    this.startLoadingSequence();
     this.checkConnectionStatus();
     this.bindEvents();
     this.updateStatus();
   }
 
   initializeElements() {
+    // Loading elements
+    this.loadingScreen = document.getElementById('loadingScreen');
+    this.loadingStatus = document.getElementById('loadingStatus');
+    
     // Animation elements
     this.startLogo = document.getElementById('startLogo');
     this.mainContainer = document.getElementById('mainContainer');
@@ -44,6 +48,43 @@ class PopupManager {
     this.showButtons = document.getElementById('showButtons');
     this.showTitleAsPresence = document.getElementById('showTitleAsPresence');
     this.showArtistAsPresence = document.getElementById('showArtistAsPresence');
+  }
+
+  startLoadingSequence() {
+    // Simulate update check for 3 seconds
+    setTimeout(() => {
+      this.updateLoadingStatus('checking for updates...');
+    }, 500);
+    
+    setTimeout(() => {
+      this.updateLoadingStatus('loading extension...');
+    }, 1500);
+    
+    setTimeout(() => {
+      this.updateLoadingStatus('ready.');
+    }, 2500);
+    
+    // Hide loading screen and start main animation after 3 seconds
+    setTimeout(() => {
+      this.hideLoadingScreen();
+    }, 3000);
+  }
+
+  updateLoadingStatus(message) {
+    if (this.loadingStatus) {
+      this.loadingStatus.textContent = message;
+    }
+  }
+
+  hideLoadingScreen() {
+    if (this.loadingScreen) {
+      this.loadingScreen.classList.add('hide');
+      
+      // Start main animation after loading screen fades out
+      setTimeout(() => {
+        this.startAnimation();
+      }, 500);
+    }
   }
 
   startAnimation() {
