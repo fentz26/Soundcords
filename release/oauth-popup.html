@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soundcords - Discord Connection</title>
+    
+    <style>
+        @font-face {
+            font-family: 'Megna';
+            src: url('font/Megna-RegularDisplay.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Megna', sans-serif;
+            background: #0B0B0B;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        .container {
+            max-width: 400px;
+            padding: 40px 20px;
+        }
+        
+        .logo {
+            margin-bottom: 40px;
+        }
+        
+        .logo img {
+            width: 250px;
+            height: auto;
+        }
+        
+        .status {
+            font-size: 18px;
+            font-family: 'Megna', sans-serif;
+            color: #ffffff;
+            margin-bottom: 20px;
+            white-space: nowrap;
+        }
+        
+        .success {
+            color: #ffffff;
+        }
+        
+        .error {
+            color: #ffffff;
+        }
+        
+        .message {
+            font-size: 14px;
+            color: #7C7C7C;
+            font-family: 'Megna', sans-serif;
+        }
+        
+        .connect-btn {
+            background: #5865F2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: 'Megna', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+        
+        .connect-btn:hover {
+            background: #4752C4;
+        }
+        
+        .connect-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 2px solid #333;
+            border-top: 2px solid #5865F2;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="text_soundcords_white.png" alt="soundcords" />
+        </div>
+        <div id="status" class="status">
+            Connect your Discord account to enable Rich Presence
+        </div>
+        <div id="message" class="message">
+            This will allow Soundcords to show your SoundCloud activity in Discord
+        </div>
+        <button id="connectBtn" class="connect-btn">
+            Connect Discord Account
+        </button>
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div>Connecting to Discord...</div>
+        </div>
+    </div>
+
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const status = document.getElementById('status');
+        const message = document.getElementById('message');
+        const loading = document.getElementById('loading');
+        
+        connectBtn.addEventListener('click', async () => {
+            try {
+                // Show loading state
+                connectBtn.disabled = true;
+                loading.style.display = 'block';
+                status.textContent = 'Starting Discord authorization...';
+                message.textContent = 'Please complete the authorization in the new window';
+                
+                // Send message to background script to start OAuth
+                const response = await chrome.runtime.sendMessage({
+                    type: 'DISCORD_OAUTH_REQUEST'
+                });
+                
+                if (response && response.success) {
+                    status.textContent = 'Authorization window opened';
+                    message.textContent = 'Please complete the Discord authorization in the popup window';
+                } else {
+                    throw new Error('Failed to start OAuth flow');
+                }
+                
+            } catch (error) {
+                console.error('Failed to start OAuth:', error);
+                status.className = 'status error';
+                status.textContent = 'Failed to start authorization';
+                message.textContent = 'Please try again';
+                connectBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        // Listen for connection success messages
+        chrome.runtime.onMessage.addListener((message) => {
+            if (message.type === 'DISCORD_CONNECTION_SUCCESS') {
+                status.className = 'status success';
+                status.textContent = 'Successfully connected!';
+                message.textContent = 'You can now close this window';
+                connectBtn.style.display = 'none';
+                loading.style.display = 'none';
+                
+                // Close the popup after a short delay
+                setTimeout(() => {
+                    window.close();
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html> 

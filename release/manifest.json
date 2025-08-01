@@ -8,7 +8,8 @@
     "storage",
     "scripting",
     "identity",
-    "tabs"
+    "tabs",
+    "windows"
   ],
   "host_permissions": [
     "https://soundcloud.com/*",
@@ -19,7 +20,7 @@
     "https://discord.com/api/oauth2/*",
     "https://discord.com/api/v9/*",
     "https://discord.com/api/oauth2/authorize*",
-    "https://soundcords.vercel.app/*"
+    "https://soundcords-7133vgmmz-fentzzz.vercel.app/*"
   ],
 
   "background": {

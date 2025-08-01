@@ -520,18 +520,25 @@ class DiscordPresenceManager {
       console.log('Handling Discord OAuth request');
       
       const clientId = '1400634915942301806';
-      const redirectUri = 'https://soundcords.vercel.app/oauth-callback.html';
+      const redirectUri = 'https://soundcords-7133vgmmz-fentzzz.vercel.app/oauth-callback.html';
       
       // Start OAuth flow with proper scopes for Rich Presence
       const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
       
-      // Open OAuth page
-      const authTab = await chrome.tabs.create({ url: authUrl, active: true });
+      // Create a popup window instead of a new tab
+      const popup = await chrome.windows.create({
+        url: authUrl,
+        type: 'popup',
+        width: 500,
+        height: 600,
+        left: Math.round((screen.width - 500) / 2),
+        top: Math.round((screen.height - 600) / 2)
+      });
       
-      // Store tab info for later cleanup
-      this.oauthTabId = authTab.id;
+      // Store window info for later cleanup
+      this.oauthWindowId = popup.id;
       
-      sendResponse({ success: true, message: 'OAuth flow started' });
+      sendResponse({ success: true, message: 'OAuth flow started in popup window' });
     } catch (error) {
       console.error('Failed to start Discord OAuth:', error);
       sendResponse({ success: false, message: 'Failed to start OAuth' });
@@ -579,11 +586,11 @@ class DiscordPresenceManager {
       });
       
       // Close OAuth tab
-      if (this.oauthTabId) {
+      if (this.oauthWindowId) {
         try {
-          await chrome.tabs.remove(this.oauthTabId);
+          await chrome.windows.remove(this.oauthWindowId);
         } catch (error) {
-          console.warn('Could not close OAuth tab:', error);
+          console.warn('Could not close OAuth window:', error);
         }
       }
       
@@ -911,11 +918,11 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       });
       
       // Close the OAuth tab if it exists
-      if (presenceManager.oauthTabId) {
+      if (presenceManager.oauthWindowId) {
         try {
-          await chrome.tabs.remove(presenceManager.oauthTabId);
+          await chrome.windows.remove(presenceManager.oauthWindowId);
         } catch (error) {
-          console.warn('Could not close OAuth tab:', error);
+          console.warn('Could not close OAuth window:', error);
         }
       }
       
@@ -939,10 +946,19 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
+// Listen for window updates to detect OAuth completion
+chrome.windows.onRemoved.addListener(async (windowId) => {
+  // Check if this is our OAuth window being closed
+  if (presenceManager.oauthWindowId && windowId === presenceManager.oauthWindowId) {
+    console.log('OAuth window was closed');
+    presenceManager.oauthWindowId = null;
+  }
+});
+
 // Listen for tab updates to detect OAuth completion
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   // Check if this is our OAuth callback page
-  if (presenceManager.oauthTabId && tabId === presenceManager.oauthTabId && changeInfo.status === 'complete') {
+  if (presenceManager.oauthWindowId && changeInfo.status === 'complete') {
     const url = new URL(tab.url);
     
     // Check if we have a code parameter (successful OAuth)
@@ -952,7 +968,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       
       try {
         // Process the OAuth code
-        const vercelApiUrl = 'https://soundcords.vercel.app/api/discord-oauth';
+        const vercelApiUrl = 'https://soundcords-7133vgmmz-fentzzz.vercel.app/api/discord-oauth';
         
         const response = await fetch(vercelApiUrl, {
           method: 'POST',
@@ -961,7 +977,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
           },
           body: JSON.stringify({
             code: code,
-            redirectUri: 'https://soundcords.vercel.app/oauth-callback.html'
+            redirectUri: 'https://soundcords-7133vgmmz-fentzzz.vercel.app/oauth-callback.html'
           }),
         });
         
@@ -1000,12 +1016,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
           }
         });
         
-        // Close the OAuth tab
+        // Close the OAuth window
         try {
-          await chrome.tabs.remove(presenceManager.oauthTabId);
-          presenceManager.oauthTabId = null;
+          await chrome.windows.remove(presenceManager.oauthWindowId);
+          presenceManager.oauthWindowId = null;
         } catch (error) {
-          console.warn('Could not close OAuth tab:', error);
+          console.warn('Could not close OAuth window:', error);
         }
         
         // Notify the popup that connection was successful
@@ -1021,12 +1037,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       } catch (error) {
         console.error('Failed to process OAuth code:', error);
         
-        // Close the OAuth tab even on error
+        // Close the OAuth window even on error
         try {
-          await chrome.tabs.remove(presenceManager.oauthTabId);
-          presenceManager.oauthTabId = null;
+          await chrome.windows.remove(presenceManager.oauthWindowId);
+          presenceManager.oauthWindowId = null;
         } catch (closeError) {
-          console.warn('Could not close OAuth tab:', closeError);
+          console.warn('Could not close OAuth window:', closeError);
         }
       }
     }

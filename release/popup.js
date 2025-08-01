@@ -512,129 +512,21 @@ class PopupManager {
 
   async connectDiscord() {
     try {
-      // Update button state
-      if (this.connectDiscordBtn) {
-        this.connectDiscordBtn.disabled = true;
-        this.connectDiscordBtn.textContent = 'Connecting...';
-      }
-      this.updateConnectionStatus('Connecting to Discord...', 'connecting');
-
-      // Check if we already have Discord user info (for reconnection)
-      const existingUser = await chrome.storage.sync.get(['discordUser']);
-      console.log('Checking for existing Discord user:', existingUser);
+      // Open the OAuth popup window
+      const popup = await chrome.windows.create({
+        url: chrome.runtime.getURL('oauth-popup.html'),
+        type: 'popup',
+        width: 450,
+        height: 500,
+        left: Math.round((screen.width - 450) / 2),
+        top: Math.round((screen.height - 500) / 2)
+      });
       
-      let userInfo;
-      let token;
+      console.log('OAuth popup opened:', popup.id);
       
-      if (existingUser.discordUser && existingUser.discordUser.username) {
-        // Reconnecting with existing user info
-        console.log('Reconnecting with existing Discord account:', existingUser.discordUser.username);
-        userInfo = existingUser.discordUser;
-        token = 'reconnect_token_' + Date.now();
-        this.updateConnectionStatus('Reconnecting to Discord...', 'connecting');
-        
-        // Simulate reconnection delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } else {
-        // First time connection - start Discord OAuth
-        console.log('First time Discord connection - starting OAuth flow');
-        this.updateConnectionStatus('Starting Discord authorization...', 'connecting');
-        
-        // Start OAuth flow through background script
-        const oauthResponse = await chrome.runtime.sendMessage({
-          type: 'DISCORD_OAUTH_REQUEST'
-        });
-        
-        if (!oauthResponse || !oauthResponse.success) {
-          throw new Error('Failed to start OAuth flow');
-        }
-        
-        this.updateConnectionStatus('Please complete Discord authorization in the new tab...', 'connecting');
-        
-        // Wait for OAuth completion by polling for user data
-        let attempts = 0;
-        const maxAttempts = 60; // Wait up to 30 seconds (500ms intervals)
-        
-        while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const oauthResult = await chrome.storage.sync.get(['discordUser', 'discordToken', 'isConnected']);
-          
-          if (oauthResult.isConnected && oauthResult.discordUser && oauthResult.discordToken) {
-            // OAuth was successful
-            userInfo = oauthResult.discordUser;
-            token = oauthResult.discordToken;
-            console.log('OAuth successful, user info received:', userInfo.username);
-            break;
-          }
-          
-          attempts++;
-        }
-        
-        if (!userInfo || !token) {
-          // Fallback to mock data for testing purposes
-          console.log('OAuth timeout - using fallback mock data');
-          userInfo = {
-            id: '463894270810783755',
-            username: 'Discord User',
-            discriminator: '0000',
-            avatar: null
-          };
-          token = 'fallback_token_' + Date.now();
-          
-          // Save the fallback data
-          await chrome.storage.sync.set({ 
-            isConnected: true,
-            discordToken: token,
-            discordUser: userInfo
-          });
-        }
-      }
-
-      // Save connection state (if not already saved by OAuth)
-      if (!existingUser.discordUser || !existingUser.discordUser.username) {
-        await chrome.storage.sync.set({ 
-          isConnected: true,
-          discordToken: token,
-          discordUser: userInfo
-        });
-      }
-      
-      console.log('Connection state saved:', { isConnected: true, username: userInfo.username });
-
-      // Try to initialize Discord RPC (but don't fail if it doesn't work)
-      try {
-        await chrome.runtime.sendMessage({
-          type: 'INIT_DISCORD_RPC',
-          token: token,
-          userInfo: userInfo
-        });
-      } catch (rpcError) {
-        console.warn('Discord RPC initialization failed (this is expected):', rpcError);
-      }
-
-      // Update UI
-      this.updateConnectionStatus('Connected successfully!', 'connected');
-      await this.updateDiscordStatus(true);
-      this.showMainContent();
-
-      // Reset button state
-      if (this.connectDiscordBtn) {
-        this.connectDiscordBtn.disabled = false;
-        this.connectDiscordBtn.innerHTML = '<img src="discord-logo.png" alt="Discord" class="discord-icon">connect discord account';
-      }
-
-      console.log('Discord connected successfully');
-
     } catch (error) {
-      console.error('Connection failed:', error);
-      this.updateConnectionStatus('Connection failed. Please try again.', 'error');
-      
-      // Reset button state
-      if (this.connectDiscordBtn) {
-        this.connectDiscordBtn.disabled = false;
-        this.connectDiscordBtn.innerHTML = '<img src="discord-logo.png" alt="Discord" class="discord-icon">connect discord account';
-      }
+      console.error('Failed to open OAuth popup:', error);
+      this.updateConnectionStatus('Failed to open connection window. Please try again.', 'error');
     }
   }
 
