@@ -537,7 +537,7 @@ class PopupManager {
       // Reset button state
       if (this.connectDiscordBtn) {
         this.connectDiscordBtn.disabled = false;
-        this.connectDiscordBtn.innerHTML = '<img src="discord-logo.png" alt="Discord" class="discord-icon">connect discord account';
+        this.connectDiscordBtn.innerHTML = '<span>connect Discord account</span><img src="icon_open_link.png" alt="Open Link" class="discord-icon">';
       }
     }
   }
