@@ -19,7 +19,7 @@
     "https://discord.com/api/oauth2/*",
     "https://discord.com/api/v9/*",
     "https://discord.com/api/oauth2/authorize*",
-    "https://soundcords-6tz3jy0eo-fentzzz.vercel.app/*"
+    "https://soundcords-bs6bcxz6e-fentzzz.vercel.app/*"
   ],
 
   "background": {
