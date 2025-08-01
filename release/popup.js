@@ -51,23 +51,35 @@ class PopupManager {
   }
 
   startLoadingSequence() {
-    // Simulate update check for 3 seconds
-    setTimeout(() => {
-      this.updateLoadingStatus('checking for updates...');
-    }, 500);
+    // Check if we should show update check (every 10 minutes)
+    const lastUpdateCheck = localStorage.getItem('lastUpdateCheck');
+    const now = Date.now();
+    const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
     
-    setTimeout(() => {
-      this.updateLoadingStatus('loading extension...');
-    }, 1500);
-    
-    setTimeout(() => {
-      this.updateLoadingStatus('ready.');
-    }, 2500);
-    
-    // Hide loading screen and start main animation after 3 seconds
-    setTimeout(() => {
+    if (!lastUpdateCheck || (now - parseInt(lastUpdateCheck)) >= tenMinutes) {
+      // Show update check
+      this.updateLoadingStatus('check for update.');
+      localStorage.setItem('lastUpdateCheck', now.toString());
+      
+      // Hide loading screen and start main animation after 2 seconds
+      setTimeout(() => {
+        this.hideLoadingScreen();
+      }, 2000);
+    } else {
+      // Instantly move logo to top position and show main content
+      if (this.startLogo) {
+        this.startLogo.style.top = '20px';
+        this.startLogo.style.left = '50%';
+        this.startLogo.style.transform = 'translate(-50%, 0)';
+        this.startLogo.style.animation = 'none';
+        this.startLogo.style.opacity = '1';
+        this.startLogo.style.display = '';
+      }
+      if (this.mainContainer) {
+        this.mainContainer.classList.add('show');
+      }
       this.hideLoadingScreen();
-    }, 3000);
+    }
   }
 
   updateLoadingStatus(message) {

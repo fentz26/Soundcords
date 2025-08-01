@@ -25,6 +25,7 @@ body {
   width: 350px;
   height: 500px;
   min-height: 500px;
+  max-height: 500px;
   overflow: hidden;
   margin: 0;
   padding: 0;
@@ -139,12 +140,14 @@ body {
   padding: 20px;
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   min-height: 500px;
+  max-height: 500px;
   display: flex;
   flex-direction: column;
   border: none;
   outline: none;
+  overflow: hidden;
 }
 
 /* Start Animation Logo */
@@ -190,8 +193,7 @@ body {
 /* Main Container */
 .main-container {
   opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.8s ease-out;
+  transition: opacity 0.8s ease-out;
   position: relative;
   z-index: 1;
   height: 100%;
@@ -200,7 +202,6 @@ body {
 
 .main-container.show {
   opacity: 1;
-  transform: translateY(0);
 }
 
 /* Connection Screen - Always visible when main container is shown */
@@ -697,27 +698,21 @@ body {
 /* Connection Screen Styles */
 .connection-screen {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  min-height: 400px;
-  text-align: center;
-  animation: fadeIn 0.8s ease-out;
+  height: 100%;
+  padding: 20px;
+  padding-bottom: 40px;
 }
 
 .connection-content {
-  padding: 20px;
-  animation: slideUp 0.8s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 40px;
 }
 
 .discord-bot-image {
@@ -747,33 +742,48 @@ body {
 }
 
 .connect-button {
-  background: #E4E4E4;
+  background: transparent;
   padding: 12px 24px;
   border-radius: 0;
   font-size: 14px;
-  font-weight: 300;
-  color: #000000;
+  font-weight: 400;
+  color: #ffffff;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: none;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #ffffff;
   box-shadow: none;
   position: relative;
-  overflow: hidden;
-  font-family: 'Genos', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: visible;
+  font-family: 'Megna', 'Genos', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 0;
+}
+
+.connect-button span {
+  flex: 1;
+  text-align: left;
+}
+
+.connect-button .discord-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  transition: none;
 }
 
 .connect-button:hover {
-  background: #D4D4D4;
+  background: transparent;
   transform: none;
   box-shadow: none;
 }
 
 .connect-button:active {
-  background: #C4C4C4;
+  background: transparent;
   transform: none;
   box-shadow: none;
 }
