@@ -47,10 +47,10 @@ class PopupManager {
   }
 
   startAnimation() {
-    // Wait for logo to appear, then start the sequence
+    // Wait for logo to fade in, then start the sequence
     setTimeout(() => {
       this.moveLogoToHeader();
-    }, 1000); // Wait 1 second for logo to appear
+    }, 1000); // Wait 1 second for logo to fade in
   }
 
   moveLogoToHeader() {
@@ -58,24 +58,20 @@ class PopupManager {
       // Add animation class to move logo to header position
       this.startLogo.style.animation = 'logoMoveToHeader 0.8s ease-out forwards';
       
-      // After logo moves, show main content
+      // After logo moves, show main container
       setTimeout(() => {
-        this.showMainContent();
+        this.showMainContainer();
       }, 800);
     }
   }
 
-  showMainContent() {
+  showMainContainer() {
     if (this.mainContainer) {
       // Show main container with fade-in animation
       this.mainContainer.classList.add('show');
       
-      // Hide start logo after main content appears
-      setTimeout(() => {
-        if (this.startLogo) {
-          this.startLogo.style.display = 'none';
-        }
-      }, 800);
+      // Keep the logo visible - it's now in the header position
+      // No need to hide it since it transforms into the final position
     }
   }
 
