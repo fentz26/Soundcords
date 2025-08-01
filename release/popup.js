@@ -66,14 +66,16 @@ class PopupManager {
         this.hideLoadingScreen();
       }, 2000);
     } else {
-      // Instantly move logo to top position and show main content
+      // Skip loading and animation, immediately show final state
       if (this.startLogo) {
+        // Immediately position logo at top without any center animation
+        this.startLogo.style.position = 'absolute';
         this.startLogo.style.top = '20px';
         this.startLogo.style.left = '50%';
         this.startLogo.style.transform = 'translate(-50%, 0)';
         this.startLogo.style.animation = 'none';
         this.startLogo.style.opacity = '1';
-        this.startLogo.style.display = '';
+        this.startLogo.style.zIndex = '1';
       }
       if (this.mainContainer) {
         this.mainContainer.classList.add('show');

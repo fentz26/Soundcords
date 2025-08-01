@@ -5,5 +5,22 @@
     "api/discord-oauth.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://soundcords.vercel.app/",
+      "permanent": true
+    },
+    {
+      "source": "/api",
+      "destination": "https://soundcords.vercel.app/api",
+      "permanent": true
+    },
+    {
+      "source": "/api/discord-oauth",
+      "destination": "https://soundcords.vercel.app/api/discord-oauth",
+      "permanent": true
+    }
+  ]
 } 
