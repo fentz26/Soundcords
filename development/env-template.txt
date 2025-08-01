@@ -12,10 +12,9 @@ DISCORD_CLIENT_SECRET=your_discord_client_secret_here
 # DISCORD_CLIENT_ID=1400634915942301806
 
 # OAuth2 Scopes for Rich Presence
-# Required scopes: identify, activities.write
+# Required scopes: identify
 # This allows the app to:
 # - identify: Get user info and access token for Rich Presence
-# - activities.write: Update user's Discord activity/presence
 
 # Optional: Custom redirect URI (if different from default)
 # REDIRECT_URI=https://soundcords.vercel.app/oauth-callback.html

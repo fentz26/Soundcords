@@ -546,18 +546,18 @@ class PopupManager {
     if (this.connectionStatus) {
       this.connectionStatus.textContent = message;
       this.connectionStatus.className = `status-text ${status}`;
-    }
-    
-    // Add visual feedback for connecting state
-    if (status === 'connecting') {
-      this.connectionStatus.style.color = '#5865F2';
-      this.connectionStatus.style.fontWeight = '500';
-    } else if (status === 'error') {
-      this.connectionStatus.style.color = '#ff6b6b';
-      this.connectionStatus.style.fontWeight = '500';
-    } else {
-      this.connectionStatus.style.color = '#ffffff';
-      this.connectionStatus.style.fontWeight = 'normal';
+      
+      // Add visual feedback for connecting state
+      if (status === 'connecting') {
+        this.connectionStatus.style.color = '#5865F2';
+        this.connectionStatus.style.fontWeight = '500';
+      } else if (status === 'error') {
+        this.connectionStatus.style.color = '#ff6b6b';
+        this.connectionStatus.style.fontWeight = '500';
+      } else {
+        this.connectionStatus.style.color = '#ffffff';
+        this.connectionStatus.style.fontWeight = 'normal';
+      }
     }
   }
 

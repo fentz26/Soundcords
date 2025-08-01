@@ -524,7 +524,7 @@ class DiscordPresenceManager {
       const redirectUri = 'https://soundcords.vercel.app/oauth-callback.html';
       
       // Start OAuth flow with proper scopes for Rich Presence
-      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20activities.write`;
+      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
       
       // Create a new tab for OAuth (smoother than popup)
       const authTab = await chrome.tabs.create({
