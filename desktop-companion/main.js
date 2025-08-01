@@ -24,6 +24,12 @@ class SoundcordsCompanion {
     this.initDiscordRPC();
   }
 
+  // Helper function to get Soundcords logo URL
+  getSoundcordsLogoUrl() {
+    // For now, we'll use a placeholder. In production, this should be uploaded to Discord's CDN
+    return 'https://soundcloud.com/favicon.ico'; // Fallback to SoundCloud favicon
+  }
+
   // Helper function to extract artwork URL from SoundCloud
   async extractArtworkUrl(songUrl) {
     try {
@@ -180,36 +186,85 @@ class SoundcordsCompanion {
     }
 
     try {
-      // Try to extract artwork URL from the song URL
       let artworkUrl = null;
-      try {
-        artworkUrl = await this.extractArtworkUrl(songInfo.url);
-        console.log('Extracted artwork URL:', artworkUrl);
-      } catch (error) {
-        console.log('Could not extract artwork URL:', error);
-      }
+      let largeImageKey = 'soundcords_logo'; // Default to Soundcords logo
+      let largeImageText = 'Soundcords';
 
-      const presenceData = {
-        details: `Listening to ${songInfo.title}`,
-        state: `${songInfo.artist} On Soundcords`,
-        largeImageKey: artworkUrl || 'soundcloud',
-        largeImageText: songInfo.title,
-        smallImageKey: 'play',
-        smallImageText: 'Listening',
-        startTimestamp: Date.now(),
-        buttons: [
-          {
-            label: 'View on SoundCloud',
-            url: songInfo.url
+      if (songInfo && songInfo.title) {
+        // Try to extract artwork URL from the song URL
+        try {
+          artworkUrl = await this.extractArtworkUrl(songInfo.url);
+          console.log('Extracted artwork URL:', artworkUrl);
+          if (artworkUrl) {
+            largeImageKey = artworkUrl;
+            largeImageText = songInfo.title;
           }
-        ]
-      };
+        } catch (error) {
+          console.log('Could not extract artwork URL:', error);
+        }
 
-      // Set activity type to 2 (Listening) for music activity
-      await this.rpc.setActivity(presenceData, 2);
-      this.currentPresence = presenceData;
+        // Get current time for timestamps
+        const startTimestamp = Date.now();
+        
+        // For now, we'll use a default duration (3 minutes)
+        // In a real implementation, you'd get the actual song duration
+        const songDurationInSeconds = 3 * 60; // 3 minutes default
+        const endTimestamp = startTimestamp + (songDurationInSeconds * 1000);
 
-      console.log('Rich Presence updated:', presenceData.details);
+        const presenceData = {
+          // Set the activity type to 'LISTENING' to get the "Listening to" text
+          type: 'LISTENING',
+          
+          // Main line of text - artist and song title
+          details: `${songInfo.artist} - ${songInfo.title}`,
+          
+          // Subtitle - can be used for additional info
+          state: 'On Soundcords',
+          
+          // Timestamps for progress bar
+          startTimestamp: startTimestamp,
+          endTimestamp: endTimestamp,
+          
+          // Large image (album art)
+          largeImageKey: largeImageKey,
+          largeImageText: largeImageText,
+          
+          // Small image (optional)
+          smallImageKey: 'soundcloud',
+          smallImageText: 'SoundCloud',
+          
+          // Button to link to the song
+          buttons: [
+            {
+              label: 'Listen on SoundCloud',
+              url: songInfo.url
+            }
+          ]
+        };
+
+        // Set the Rich Presence activity
+        await this.rpc.setActivity(presenceData);
+        this.currentPresence = presenceData;
+
+        console.log('Rich Presence updated:', presenceData.details);
+      } else {
+        // No song playing - show Soundcords logo
+        const presenceData = {
+          type: 'LISTENING',
+          details: 'Soundcords',
+          state: 'Ready to listen',
+          startTimestamp: Date.now(),
+          largeImageKey: this.getSoundcordsLogoUrl(),
+          largeImageText: 'Soundcords',
+          smallImageKey: 'soundcloud',
+          smallImageText: 'SoundCloud'
+        };
+
+        await this.rpc.setActivity(presenceData);
+        this.currentPresence = presenceData;
+
+        console.log('Rich Presence updated: No song playing');
+      }
 
     } catch (error) {
       console.error('Failed to update Discord presence:', error);
