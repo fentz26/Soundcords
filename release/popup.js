@@ -1,7 +1,7 @@
 class PopupManager {
   constructor() {
     this.initializeElements();
-    this.initializeUpdateChecker();
+    this.startLoadingSequence();
     this.checkConnectionStatus();
     this.bindEvents();
     this.updateStatus();
@@ -50,96 +50,105 @@ class PopupManager {
     this.showArtistAsPresence = document.getElementById('showArtistAsPresence');
   }
 
-  async initializeUpdateChecker() {
-    try {
-      // Load the update checker and loading animation
-      await this.loadUpdateChecker();
-      
-      // Initialize the update checker
-      await this.updateChecker.initialize();
-    } catch (error) {
-      console.error('Failed to initialize update checker:', error);
-      // Fallback to default interface
-      this.showDefaultInterface();
+  startLoadingSequence() {
+    // Check if we should show update check (every 10 minutes)
+    const lastUpdateCheck = localStorage.getItem('lastUpdateCheck');
+    const now = Date.now();
+    const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
+    
+    if (!lastUpdateCheck || (now - parseInt(lastUpdateCheck)) >= tenMinutes) {
+      // Show update check with loading animation
+      this.performUpdateCheck();
+      localStorage.setItem('lastUpdateCheck', now.toString());
+    } else {
+      // Skip loading and animation, immediately show final state
+      this.skipLoadingAnimation();
     }
   }
 
-  async loadUpdateChecker() {
-    // Create update checker instance
-    this.updateChecker = new UpdateChecker();
+  async performUpdateCheck() {
+    console.log('Performing update check...');
     
-    // Create loading animation instance
-    this.loadingAnimation = new LoadingAnimation();
+    // Update loading status messages
+    await this.updateLoadingStatus('Checking for updates...', 2000);
+    await this.updateLoadingStatus('Initializing...', 1500);
+    await this.updateLoadingStatus('Ready', 1000);
     
-    // Set up message listeners for state management
-    this.setupStateListeners();
+    // Hide loading screen and start main animation
+    setTimeout(() => {
+      this.hideLoadingScreen();
+    }, 500);
   }
 
-  setupStateListeners() {
-    // Listen for messages from update checker
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      switch (message.type) {
-        case 'RESTORE_LAST_STATE':
-          this.restoreLastState(message.pageState, message.activeTab);
-          break;
-        case 'SHOW_DEFAULT_INTERFACE':
-          this.showDefaultInterface();
-          break;
-        case 'SAVE_CURRENT_STATE':
-          this.saveCurrentState(message.pageState, message.activeTab);
-          break;
-      }
-    });
+  async updateLoadingStatus(message, duration) {
+    if (this.loadingStatus) {
+      this.loadingStatus.textContent = message;
+    }
+    
+    // Wait for the specified duration
+    return new Promise(resolve => setTimeout(resolve, duration));
   }
 
-  async restoreLastState(pageState, activeTab) {
-    console.log('Restoring last state:', pageState, activeTab);
+  skipLoadingAnimation() {
+    console.log('Skipping loading animation - showing last state');
     
     // Hide loading screen immediately
     this.hideLoadingScreen();
     
-    // Restore to specific page if provided
-    if (pageState === 'settings') {
-      this.showSettingsPage();
-    } else {
-      this.showMainPage();
+    // Show main container without animation
+    if (this.mainContainer) {
+      this.mainContainer.classList.add('show');
     }
     
-    // Show main container
-    this.showMainContainer();
-  }
-
-  showDefaultInterface() {
-    console.log('Showing default interface');
-    
-    // Hide loading screen
-    this.hideLoadingScreen();
-    
-    // Show main container with default state
-    this.showMainContainer();
-    
-    // Show main page by default
-    this.showMainPage();
-  }
-
-  saveCurrentState(pageState, activeTab) {
-    // Save current page state
-    chrome.storage.local.set({
-      lastPageState: pageState,
-      lastActiveTab: activeTab,
-      lastSaveTime: Date.now()
-    });
+    // Position logo at top immediately
+    if (this.startLogo) {
+      this.startLogo.style.position = 'absolute';
+      this.startLogo.style.top = '20px';
+      this.startLogo.style.left = '50%';
+      this.startLogo.style.transform = 'translate(-50%, 0)';
+      this.startLogo.style.animation = 'none';
+      this.startLogo.style.opacity = '1';
+      this.startLogo.style.zIndex = '1';
+    }
   }
 
   hideLoadingScreen() {
     if (this.loadingScreen) {
       this.loadingScreen.classList.add('hide');
+      
+      // Start main animation after loading screen fades out
+      setTimeout(() => {
+        this.startAnimation();
+      }, 500);
+    }
+  }
+
+  startAnimation() {
+    // Wait for logo to fade in, then start the sequence
+    setTimeout(() => {
+      this.moveLogoToHeader();
+    }, 1000); // Wait 1 second for logo to fade in
+  }
+
+  moveLogoToHeader() {
+    if (this.startLogo) {
+      // Add animation class to move logo to header position
+      this.startLogo.style.animation = 'logoMoveToHeader 0.8s ease-out forwards';
+      
+      // After logo moves, show main container
+      setTimeout(() => {
+        this.showMainContainer();
+      }, 800);
     }
   }
 
   showMainContainer() {
     if (this.mainContainer) {
+      // Show main container with fade-in animation
       this.mainContainer.classList.add('show');
+      
+      // Keep the logo visible - it's now in the header position
+      // No need to hide it since it transforms into the final position
     }
   }
 
@@ -227,6 +236,15 @@ class PopupManager {
   showSettingsPage() {
     this.mainPage.classList.remove('active');
     this.settingsPage.classList.add('active');
+  }
+
+  saveCurrentState(pageState, activeTab) {
+    // Save current page state
+    chrome.storage.local.set({
+      lastPageState: pageState,
+      lastActiveTab: activeTab,
+      lastSaveTime: Date.now()
+    });
   }
 
   async updateDiscordStatus(isConnected) {

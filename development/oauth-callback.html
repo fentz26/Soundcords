@@ -132,7 +132,7 @@
                 },
                 body: JSON.stringify({
                     code: code,
-                    redirectUri: window.location.origin + '/oauth-callback.html'
+                    redirectUri: 'https://soundcords.vercel.app/oauth-callback.html'
                 })
             })
             .then(response => response.json())
