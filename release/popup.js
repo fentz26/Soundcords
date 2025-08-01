@@ -1,12 +1,17 @@
 class PopupManager {
   constructor() {
     this.initializeElements();
+    this.startAnimation();
     this.checkConnectionStatus();
     this.bindEvents();
     this.updateStatus();
   }
 
   initializeElements() {
+    // Animation elements
+    this.startLogo = document.getElementById('startLogo');
+    this.mainContainer = document.getElementById('mainContainer');
+    
     // Connection elements
     this.connectionScreen = document.getElementById('connectionScreen');
     this.mainContent = document.getElementById('mainContent');
@@ -41,7 +46,38 @@ class PopupManager {
     this.showArtistAsPresence = document.getElementById('showArtistAsPresence');
   }
 
+  startAnimation() {
+    // Wait for logo to appear, then start the sequence
+    setTimeout(() => {
+      this.moveLogoToHeader();
+    }, 1000); // Wait 1 second for logo to appear
+  }
 
+  moveLogoToHeader() {
+    if (this.startLogo) {
+      // Add animation class to move logo to header position
+      this.startLogo.style.animation = 'logoMoveToHeader 0.8s ease-out forwards';
+      
+      // After logo moves, show main content
+      setTimeout(() => {
+        this.showMainContent();
+      }, 800);
+    }
+  }
+
+  showMainContent() {
+    if (this.mainContainer) {
+      // Show main container with fade-in animation
+      this.mainContainer.classList.add('show');
+      
+      // Hide start logo after main content appears
+      setTimeout(() => {
+        if (this.startLogo) {
+          this.startLogo.style.display = 'none';
+        }
+      }, 800);
+    }
+  }
 
   bindEvents() {
     // Connection button event
