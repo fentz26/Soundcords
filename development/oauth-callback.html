@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soundcords - OAuth Callback</title>
     
-    <!-- Critical CSS to prevent layout shift -->
     <style>
+        @font-face {
+            font-family: 'Megna';
+            src: url('/font/Megna-RegularDisplay.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -14,90 +20,62 @@
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(-45deg, #0a0a0a, #1a1a1a, #0a0a0a, #1a1a1a);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
+            font-family: 'Megna', sans-serif;
+            background: #000000;
             color: #ffffff;
             min-height: 100vh;
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: center;
-            padding-top: 20vh;
-        }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            text-align: center;
         }
         
         .container {
-            text-align: center;
-            max-width: 500px;
-            padding: 40px;
+            max-width: 400px;
+            padding: 40px 20px;
         }
         
         .logo {
-            font-size: 36px;
-            font-weight: 300;
-            margin-bottom: 20px;
-            letter-spacing: 2px;
+            margin-bottom: 40px;
+        }
+        
+        .logo img {
+            width: 200px;
+            height: auto;
         }
         
         .status {
             font-size: 18px;
+            font-family: 'Megna', sans-serif;
+            color: #ffffff;
             margin-bottom: 20px;
-            padding: 20px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .success {
-            border-color: rgba(76, 175, 80, 0.3);
             color: #4CAF50;
         }
         
         .error {
-            border-color: rgba(244, 67, 54, 0.3);
             color: #F44336;
         }
         
         .message {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.7);
-            margin-top: 20px;
+            font-family: 'Megna', sans-serif;
         }
         
         .message.hidden {
             display: none;
         }
-        
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #ffffff;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
-    
-    <!-- External CSS for non-critical styles -->
-    <link rel="stylesheet" href="oauth-callback.css">
 </head>
 <body>
     <div class="container">
-        <div class="logo">soundcords</div>
+        <div class="logo">
+            <img src="/text_soundcords_white.png" alt="soundcords" />
+        </div>
         <div id="status" class="status">
-            <div class="spinner"></div>
             Processing Discord authorization...
         </div>
         <div id="message" class="message hidden">
@@ -117,12 +95,12 @@
         if (error) {
             // Handle OAuth error
             statusEl.className = 'status error';
-            statusEl.innerHTML = `Authorization failed: ${error}`;
+            statusEl.textContent = `Authorization failed: ${error}`;
             messageEl.classList.remove('hidden');
             messageEl.textContent = 'Please try again from the extension.';
         } else if (code) {
             // Process the authorization code
-            statusEl.innerHTML = '<div class="spinner"></div>Completing authorization...';
+            statusEl.textContent = 'Completing authorization...';
             
             // Send the code to our API
             fetch('/api/discord-oauth', {
@@ -139,7 +117,7 @@
             .then(data => {
                 if (data.success) {
                     statusEl.className = 'status success';
-                    statusEl.innerHTML = '✅ Discord connected successfully!';
+                    statusEl.textContent = 'Successfully connected!';
                     messageEl.classList.remove('hidden');
                     
                     // Send message to extension if it's listening
@@ -155,23 +133,17 @@
             })
             .catch(err => {
                 statusEl.className = 'status error';
-                statusEl.innerHTML = `❌ Authorization failed: ${err.message}`;
+                statusEl.textContent = `Authorization failed: ${err.message}`;
                 messageEl.classList.remove('hidden');
                 messageEl.textContent = 'Please try again from the extension.';
             });
         } else {
             // No code or error parameter
             statusEl.className = 'status error';
-            statusEl.innerHTML = '❌ Invalid authorization request';
+            statusEl.textContent = 'Invalid authorization request';
             messageEl.classList.remove('hidden');
             messageEl.textContent = 'Please try again from the extension.';
         }
-    </script>
-
-    <!-- Vercel Analytics -->
-    <script type="module">
-        import { inject } from '@vercel/analytics';
-        inject();
     </script>
 </body>
 </html> 

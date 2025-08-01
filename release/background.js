@@ -879,7 +879,59 @@ class DiscordPresenceManager {
 // Initialize the presence manager
 const presenceManager = new DiscordPresenceManager();
 
-// Note: OAuth callback listener removed since we're using simplified connection
+// Listen for OAuth success messages from the callback page
+window.addEventListener('message', async (event) => {
+  if (event.data && event.data.type === 'DISCORD_OAUTH_SUCCESS') {
+    console.log('OAuth success received from callback page:', event.data);
+    
+    try {
+      // Handle the OAuth success
+      const { data } = event.data;
+      
+      // Save user info and token
+      await chrome.storage.sync.set({
+        isConnected: true,
+        discordToken: data.accessToken,
+        discordUser: data.userInfo,
+        refreshToken: data.refreshToken,
+        tokenExpiresAt: Date.now() + (data.expiresIn * 1000)
+      });
+      
+      // Initialize Discord RPC with the new token
+      await presenceManager.handleInitDiscordRPC({
+        token: data.accessToken,
+        userInfo: data.userInfo
+      }, (response) => {
+        console.log('Discord RPC initialization response:', response);
+        if (response && response.success) {
+          console.log('Discord RPC initialized successfully');
+        } else {
+          console.log('Discord RPC initialization failed');
+        }
+      });
+      
+      // Close the OAuth tab if it exists
+      if (presenceManager.oauthTabId) {
+        try {
+          await chrome.tabs.remove(presenceManager.oauthTabId);
+        } catch (error) {
+          console.warn('Could not close OAuth tab:', error);
+        }
+      }
+      
+      // Notify the popup that connection was successful
+      chrome.runtime.sendMessage({
+        type: 'DISCORD_CONNECTION_SUCCESS',
+        userInfo: data.userInfo
+      }).catch(() => {
+        // Popup might not be open, ignore error
+      });
+      
+    } catch (error) {
+      console.error('Failed to handle OAuth success:', error);
+    }
+  }
+});
 
 // Cleanup on extension unload
 chrome.runtime.onSuspend.addListener(() => {

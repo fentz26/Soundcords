@@ -5,6 +5,7 @@ class PopupManager {
     this.checkConnectionStatus();
     this.bindEvents();
     this.updateStatus();
+    this.setupMessageListeners();
   }
 
   initializeElements() {
@@ -737,6 +738,26 @@ class PopupManager {
       console.error('Failed to clear Discord data:', error);
     }
   }
+
+  async handleDiscordConnectionSuccess(userInfo) {
+    try {
+      console.log('Handling Discord connection success:', userInfo);
+      
+      // Update Discord status
+      this.updateDiscordStatus(true);
+      this.updateDiscordUsername(userInfo.username || 'Connected');
+      
+      // Show main content
+      this.showMainContent();
+      
+      // Update status indicator
+      this.updateStatusIndicator(true);
+      
+      console.log('Discord connection success handled');
+    } catch (error) {
+      console.error('Failed to handle Discord connection success:', error);
+    }
+  }
 }
 
 // Initialize popup when DOM is loaded
@@ -749,5 +770,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SONG_UPDATED') {
     const popup = new PopupManager();
     popup.updateSongInfo(message.songInfo);
+  } else if (message.type === 'DISCORD_CONNECTION_SUCCESS') {
+    console.log('Discord connection success received in popup:', message);
+    const popup = new PopupManager();
+    popup.handleDiscordConnectionSuccess(message.userInfo);
   }
 }); 

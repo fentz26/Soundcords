@@ -5,5 +5,27 @@
     "api/discord-oauth.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/oauth-callback.html",
+      "dest": "/oauth-callback.html"
+    },
+    {
+      "src": "/index.html",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/oauth-callback.css",
+      "dest": "/oauth-callback.css"
+    },
+    {
+      "src": "/font/(.*)",
+      "dest": "/font/$1"
+    },
+    {
+      "src": "/text_soundcords_white.png",
+      "dest": "/text_soundcords_white.png"
+    }
+  ]
 } 
