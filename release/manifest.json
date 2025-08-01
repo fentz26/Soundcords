@@ -20,7 +20,7 @@
     "https://discord.com/api/oauth2/*",
     "https://discord.com/api/v9/*",
     "https://discord.com/api/oauth2/authorize*",
-    "https://soundcords-7133vgmmz-fentzzz.vercel.app/*"
+    "https://soundcords.vercel.app/*"
   ],
 
   "background": {
@@ -46,5 +46,11 @@
     "16": "Logo_Soundcords_circle.png",
     "48": "Logo_Soundcords_circle.png",
     "128": "Logo_Soundcords_circle.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["oauth-popup.html", "text_soundcords_white.png", "font/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 } 

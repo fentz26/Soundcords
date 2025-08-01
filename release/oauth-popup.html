@@ -139,6 +139,7 @@
         const message = document.getElementById('message');
         const loading = document.getElementById('loading');
         
+        console.log('Setting up click listener for connect button');
         connectBtn.addEventListener('click', async () => {
             try {
                 // Show loading state
@@ -147,10 +148,12 @@
                 status.textContent = 'Starting Discord authorization...';
                 message.textContent = 'Please complete the authorization in the new window';
                 
+                console.log('Sending DISCORD_OAUTH_REQUEST message to background script');
                 // Send message to background script to start OAuth
                 const response = await chrome.runtime.sendMessage({
                     type: 'DISCORD_OAUTH_REQUEST'
                 });
+                console.log('Received response from background script:', response);
                 
                 if (response && response.success) {
                     status.textContent = 'Authorization window opened';

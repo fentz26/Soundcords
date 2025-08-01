@@ -517,10 +517,11 @@ class DiscordPresenceManager {
 
   async handleDiscordOAuth(message, sendResponse) {
     try {
-      console.log('Handling Discord OAuth request');
+      console.log('Handling Discord OAuth request from popup');
+      console.log('Message received:', message);
       
       const clientId = '1400634915942301806';
-      const redirectUri = 'https://soundcords-7133vgmmz-fentzzz.vercel.app/oauth-callback.html';
+      const redirectUri = 'https://soundcords.vercel.app/oauth-callback.html';
       
       // Start OAuth flow with proper scopes for Rich Presence
       const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
@@ -968,7 +969,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       
       try {
         // Process the OAuth code
-        const vercelApiUrl = 'https://soundcords-7133vgmmz-fentzzz.vercel.app/api/discord-oauth';
+        const vercelApiUrl = 'https://soundcords.vercel.app/api/discord-oauth';
         
         const response = await fetch(vercelApiUrl, {
           method: 'POST',
@@ -977,7 +978,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
           },
           body: JSON.stringify({
             code: code,
-            redirectUri: 'https://soundcords-7133vgmmz-fentzzz.vercel.app/oauth-callback.html'
+            redirectUri: 'https://soundcords.vercel.app/oauth-callback.html'
           }),
         });
         
