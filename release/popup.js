@@ -758,6 +758,24 @@ class PopupManager {
       console.error('Failed to handle Discord connection success:', error);
     }
   }
+
+  setupMessageListeners() {
+    // Listen for messages from the background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      console.log('Popup received message:', message);
+      
+      switch (message.type) {
+        case 'SONG_UPDATED':
+          this.updateSongInfo(message.songInfo);
+          break;
+        case 'DISCORD_CONNECTION_SUCCESS':
+          this.handleDiscordConnectionSuccess(message.userInfo);
+          break;
+        default:
+          console.log('Unknown message type:', message.type);
+      }
+    });
+  }
 }
 
 // Initialize popup when DOM is loaded
