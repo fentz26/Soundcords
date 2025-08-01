@@ -8,8 +8,7 @@
     "storage",
     "scripting",
     "identity",
-    "tabs",
-    "windows"
+    "tabs"
   ],
   "host_permissions": [
     "https://soundcloud.com/*",
@@ -49,7 +48,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["oauth-popup.html", "text_soundcords_white.png", "font/*"],
+      "resources": ["text_soundcords_white.png", "font/*"],
       "matches": ["<all_urls>"]
     }
   ]

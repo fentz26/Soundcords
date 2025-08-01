@@ -526,20 +526,16 @@ class DiscordPresenceManager {
       // Start OAuth flow with proper scopes for Rich Presence
       const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
       
-      // Create a popup window instead of a new tab
-      const popup = await chrome.windows.create({
+      // Create a new tab for OAuth (smoother than popup)
+      const authTab = await chrome.tabs.create({
         url: authUrl,
-        type: 'popup',
-        width: 500,
-        height: 600,
-        left: Math.round((screen.width - 500) / 2),
-        top: Math.round((screen.height - 600) / 2)
+        active: true
       });
       
-      // Store window info for later cleanup
-      this.oauthWindowId = popup.id;
+      // Store tab info for later cleanup
+      this.oauthTabId = authTab.id;
       
-      sendResponse({ success: true, message: 'OAuth flow started in popup window' });
+      sendResponse({ success: true, message: 'OAuth flow started in new tab' });
     } catch (error) {
       console.error('Failed to start Discord OAuth:', error);
       sendResponse({ success: false, message: 'Failed to start OAuth' });
@@ -587,11 +583,11 @@ class DiscordPresenceManager {
       });
       
       // Close OAuth tab
-      if (this.oauthWindowId) {
+      if (this.oauthTabId) {
         try {
-          await chrome.windows.remove(this.oauthWindowId);
+          await chrome.tabs.remove(this.oauthTabId);
         } catch (error) {
-          console.warn('Could not close OAuth window:', error);
+          console.warn('Could not close OAuth tab:', error);
         }
       }
       
@@ -947,19 +943,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-// Listen for window updates to detect OAuth completion
-chrome.windows.onRemoved.addListener(async (windowId) => {
-  // Check if this is our OAuth window being closed
-  if (presenceManager.oauthWindowId && windowId === presenceManager.oauthWindowId) {
-    console.log('OAuth window was closed');
-    presenceManager.oauthWindowId = null;
-  }
-});
-
 // Listen for tab updates to detect OAuth completion
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   // Check if this is our OAuth callback page
-  if (presenceManager.oauthWindowId && changeInfo.status === 'complete') {
+  if (presenceManager.oauthTabId && tabId === presenceManager.oauthTabId && changeInfo.status === 'complete') {
     const url = new URL(tab.url);
     
     // Check if we have a code parameter (successful OAuth)
@@ -1017,12 +1004,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
           }
         });
         
-        // Close the OAuth window
+        // Close the OAuth tab
         try {
-          await chrome.windows.remove(presenceManager.oauthWindowId);
-          presenceManager.oauthWindowId = null;
+          await chrome.tabs.remove(presenceManager.oauthTabId);
+          presenceManager.oauthTabId = null;
         } catch (error) {
-          console.warn('Could not close OAuth window:', error);
+          console.warn('Could not close OAuth tab:', error);
         }
         
         // Notify the popup that connection was successful
@@ -1038,12 +1025,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       } catch (error) {
         console.error('Failed to process OAuth code:', error);
         
-        // Close the OAuth window even on error
+        // Close the OAuth tab even on error
         try {
-          await chrome.windows.remove(presenceManager.oauthWindowId);
-          presenceManager.oauthWindowId = null;
+          await chrome.tabs.remove(presenceManager.oauthTabId);
+          presenceManager.oauthTabId = null;
         } catch (closeError) {
-          console.warn('Could not close OAuth window:', closeError);
+          console.warn('Could not close OAuth tab:', closeError);
         }
       }
     }

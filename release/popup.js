@@ -512,21 +512,33 @@ class PopupManager {
 
   async connectDiscord() {
     try {
-      // Open the OAuth popup window
-      const popup = await chrome.windows.create({
-        url: chrome.runtime.getURL('oauth-popup.html'),
-        type: 'popup',
-        width: 450,
-        height: 500,
-        left: Math.round((screen.width - 450) / 2),
-        top: Math.round((screen.height - 500) / 2)
+      // Update UI to show connecting state
+      this.updateConnectionStatus('Starting Discord authorization...', 'connecting');
+      if (this.connectDiscordBtn) {
+        this.connectDiscordBtn.disabled = true;
+        this.connectDiscordBtn.innerHTML = '<div class="spinner"></div> Connecting...';
+      }
+      
+      // Send message to background script to start OAuth
+      const response = await chrome.runtime.sendMessage({
+        type: 'DISCORD_OAUTH_REQUEST'
       });
       
-      console.log('OAuth popup opened:', popup.id);
+      if (response && response.success) {
+        this.updateConnectionStatus('Authorization tab opened. Please complete the authorization and return here.', 'connecting');
+      } else {
+        throw new Error('Failed to start OAuth flow');
+      }
       
     } catch (error) {
-      console.error('Failed to open OAuth popup:', error);
-      this.updateConnectionStatus('Failed to open connection window. Please try again.', 'error');
+      console.error('Failed to start OAuth:', error);
+      this.updateConnectionStatus('Failed to start authorization. Please try again.', 'error');
+      
+      // Reset button state
+      if (this.connectDiscordBtn) {
+        this.connectDiscordBtn.disabled = false;
+        this.connectDiscordBtn.innerHTML = '<img src="discord-logo.png" alt="Discord" class="discord-icon">connect discord account';
+      }
     }
   }
 
@@ -534,6 +546,18 @@ class PopupManager {
     if (this.connectionStatus) {
       this.connectionStatus.textContent = message;
       this.connectionStatus.className = `status-text ${status}`;
+    }
+    
+    // Add visual feedback for connecting state
+    if (status === 'connecting') {
+      this.connectionStatus.style.color = '#5865F2';
+      this.connectionStatus.style.fontWeight = '500';
+    } else if (status === 'error') {
+      this.connectionStatus.style.color = '#ff6b6b';
+      this.connectionStatus.style.fontWeight = '500';
+    } else {
+      this.connectionStatus.style.color = '#ffffff';
+      this.connectionStatus.style.fontWeight = 'normal';
     }
   }
 
