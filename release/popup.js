@@ -93,15 +93,18 @@ class PopupManager {
     console.log('Skipping loading animation - showing last state');
     
     // Hide loading screen immediately
-    this.hideLoadingScreen();
+    if (this.loadingScreen) {
+      this.loadingScreen.style.display = 'none';
+    }
     
     // Show main container without animation
     if (this.mainContainer) {
       this.mainContainer.classList.add('show');
     }
     
-    // Position logo at top immediately
+    // Position logo at top immediately WITHOUT any center positioning
     if (this.startLogo) {
+      // Make sure logo never goes to center
       this.startLogo.style.position = 'absolute';
       this.startLogo.style.top = '20px';
       this.startLogo.style.left = '50%';
@@ -109,6 +112,10 @@ class PopupManager {
       this.startLogo.style.animation = 'none';
       this.startLogo.style.opacity = '1';
       this.startLogo.style.zIndex = '1';
+      this.startLogo.style.display = 'block';
+      
+      // Ensure no center positioning classes or styles
+      this.startLogo.classList.remove('center-position');
     }
   }
 
@@ -124,10 +131,22 @@ class PopupManager {
   }
 
   startAnimation() {
-    // Wait for logo to fade in, then start the sequence
+    // Make sure logo starts from center for the animation
+    if (this.startLogo) {
+      // Reset logo to center position for animation
+      this.startLogo.style.position = 'absolute';
+      this.startLogo.style.top = '50%';
+      this.startLogo.style.left = '50%';
+      this.startLogo.style.transform = 'translate(-50%, -50%)';
+      this.startLogo.style.opacity = '1';
+      this.startLogo.style.zIndex = '1';
+      this.startLogo.style.animation = 'none';
+    }
+    
+    // Wait for logo to be positioned, then start the sequence
     setTimeout(() => {
       this.moveLogoToHeader();
-    }, 1000); // Wait 1 second for logo to fade in
+    }, 100); // Shorter delay since we're positioning immediately
   }
 
   moveLogoToHeader() {

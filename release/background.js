@@ -94,19 +94,38 @@ class DiscordRPC {
 
   async updatePresenceViaAPI(presenceData) {
     try {
+      // Use the proper Discord Rich Presence API endpoint
       const response = await fetch('https://discord.com/api/v9/users/@me/activities', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(presenceData)
+        body: JSON.stringify({
+          name: presenceData.details,
+          type: 2, // Listening activity type
+          state: presenceData.state,
+          details: presenceData.details,
+          timestamps: presenceData.startTimestamp ? {
+            start: presenceData.startTimestamp
+          } : undefined,
+          assets: {
+            large_image: presenceData.largeImageKey,
+            large_text: presenceData.largeImageText,
+            small_image: presenceData.smallImageKey,
+            small_text: presenceData.smallImageText
+          },
+          buttons: presenceData.buttons || []
+        })
       });
 
       if (response.ok) {
-        console.log('Presence updated via Discord API');
+        console.log('Rich Presence updated via Discord API');
+        const result = await response.json();
+        console.log('Presence update result:', result);
       } else {
-        console.log('Failed to update presence via API:', response.status);
+        const errorText = await response.text();
+        console.log('Failed to update presence via API:', response.status, errorText);
       }
     } catch (error) {
       console.error('Error updating presence via API:', error);
@@ -150,9 +169,10 @@ class DiscordRPC {
       });
 
       if (response.ok) {
-        console.log('Presence cleared via Discord API');
+        console.log('Rich Presence cleared via Discord API');
       } else {
-        console.log('Failed to clear presence via API:', response.status);
+        const errorText = await response.text();
+        console.log('Failed to clear presence via API:', response.status, errorText);
       }
     } catch (error) {
       console.error('Error clearing presence via API:', error);
@@ -502,8 +522,8 @@ class DiscordPresenceManager {
       const clientId = '1400634915942301806';
       const redirectUri = 'https://soundcords.vercel.app/oauth-callback.html';
       
-      // Start OAuth flow
-      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
+      // Start OAuth flow with proper scopes for Rich Presence
+      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20activities.write%20activities.read`;
       
       // Open OAuth page
       const authTab = await chrome.tabs.create({ url: authUrl, active: true });
