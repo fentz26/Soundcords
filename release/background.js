@@ -523,7 +523,7 @@ class DiscordPresenceManager {
       const redirectUri = 'https://soundcords.vercel.app/oauth-callback.html';
       
       // Start OAuth flow with proper scopes for Rich Presence
-      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20activities.write%20activities.read`;
+      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
       
       // Open OAuth page
       const authTab = await chrome.tabs.create({ url: authUrl, active: true });
@@ -936,6 +936,100 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     }
     
     return true; // Keep the message channel open for async response
+  }
+});
+
+// Listen for tab updates to detect OAuth completion
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // Check if this is our OAuth callback page
+  if (presenceManager.oauthTabId && tabId === presenceManager.oauthTabId && changeInfo.status === 'complete') {
+    const url = new URL(tab.url);
+    
+    // Check if we have a code parameter (successful OAuth)
+    if (url.searchParams.has('code')) {
+      const code = url.searchParams.get('code');
+      console.log('OAuth code detected in callback page:', code);
+      
+      try {
+        // Process the OAuth code
+        const vercelApiUrl = 'https://soundcords.vercel.app/api/discord-oauth';
+        
+        const response = await fetch(vercelApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code: code,
+            redirectUri: 'https://soundcords.vercel.app/oauth-callback.html'
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error('Vercel API error:', response.status, errorData);
+          throw new Error('Failed to exchange code for token');
+        }
+        
+        const result = await response.json();
+        console.log('OAuth result from Vercel:', result);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'OAuth failed');
+        }
+        
+        // Save user info and token
+        await chrome.storage.sync.set({
+          isConnected: true,
+          discordToken: result.accessToken,
+          discordUser: result.userInfo,
+          refreshToken: result.refreshToken,
+          tokenExpiresAt: Date.now() + (result.expiresIn * 1000)
+        });
+        
+        // Initialize Discord RPC with the new token
+        await presenceManager.handleInitDiscordRPC({
+          token: result.accessToken,
+          userInfo: result.userInfo
+        }, (response) => {
+          console.log('Discord RPC initialization response:', response);
+          if (response && response.success) {
+            console.log('Discord RPC initialized successfully');
+          } else {
+            console.log('Discord RPC initialization failed');
+          }
+        });
+        
+        // Close the OAuth tab
+        try {
+          await chrome.tabs.remove(presenceManager.oauthTabId);
+          presenceManager.oauthTabId = null;
+        } catch (error) {
+          console.warn('Could not close OAuth tab:', error);
+        }
+        
+        // Notify the popup that connection was successful
+        chrome.runtime.sendMessage({
+          type: 'DISCORD_CONNECTION_SUCCESS',
+          userInfo: result.userInfo
+        }).catch(() => {
+          // Popup might not be open, ignore error
+        });
+        
+        console.log('OAuth flow completed successfully');
+        
+      } catch (error) {
+        console.error('Failed to process OAuth code:', error);
+        
+        // Close the OAuth tab even on error
+        try {
+          await chrome.tabs.remove(presenceManager.oauthTabId);
+          presenceManager.oauthTabId = null;
+        } catch (closeError) {
+          console.warn('Could not close OAuth tab:', closeError);
+        }
+      }
+    }
   }
 });
 
