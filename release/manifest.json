@@ -18,7 +18,8 @@
     "https://discord.com/api/*",
     "https://discord.com/api/oauth2/*",
     "https://discord.com/api/v9/*",
-    "https://discord.com/api/oauth2/authorize*"
+    "https://discord.com/api/oauth2/authorize*",
+    "https://soundcords-6tz3jy0eo-fentzzz.vercel.app/*"
   ],
 
   "background": {
@@ -38,11 +39,11 @@
   ],
   "action": {
     "default_popup": "popup.html",
-          "default_title": "Soundcords"
+    "default_title": "Soundcords"
   },
   "icons": {
-    "16": "logo_soundcord.png",
-    "48": "logo_soundcord.png",
-    "128": "logo_soundcord.png"
+    "16": "logo_soundiscord_bot.png",
+    "48": "logo_soundiscord_bot.png",
+    "128": "logo_soundiscord_bot.png"
   }
 } 
