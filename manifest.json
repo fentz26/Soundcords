@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Soundcord",
+  "version": "1.0.0",
+  "description": "Connect your SoundCloud activity to Discord presence",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "identity",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://soundcloud.com/*",
+    "https://discord.com/*",
+    "https://discordapp.com/*",
+    "https://*.discord.com/*",
+    "https://discord.com/api/*",
+    "https://discord.com/api/oauth2/*",
+    "https://discord.com/api/v9/*",
+    "https://discord.com/api/oauth2/authorize*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://soundcloud.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["https://discord.com/*", "https://discordapp.com/*"],
+      "js": ["discord-content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Soundcord"
+  },
+  "icons": {
+    "16": "logo_soundcord.png",
+    "48": "logo_soundcord.png",
+    "128": "logo_soundcord.png"
+  }
+} 

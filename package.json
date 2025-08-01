@@ -1,0 +1,22 @@
+{
+  "name": "soundcord-extension",
+  "version": "1.0.0",
+  "description": "Soundcord Discord extension with secure OAuth",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "discord",
+    "soundcloud",
+    "chrome-extension",
+    "oauth"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+} 
