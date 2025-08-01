@@ -37,19 +37,8 @@
         <div class="status-indicator" id="statusIndicator"></div>
       </div>
       
-      <!-- Connection Screen -->
-      <div id="connectionScreen" class="connection-screen">
-        <div class="connection-content">
-          <button id="connectDiscordBtn" class="connect-button">
-            <span>connect Discord account</span>
-            <img src="icon_open_link.png" alt="Open Link" class="discord-icon">
-          </button>
-          <div id="connectionStatus" class="connection-status"></div>
-        </div>
-      </div>
-
-      <!-- Main Content (hidden initially) -->
-      <div id="mainContent" class="main-content hidden">
+      <!-- Main Content -->
+      <div id="mainContent" class="main-content">
         <!-- Main Page -->
         <div id="mainPage" class="page-content active">
           <div class="section">
@@ -82,17 +71,20 @@
           </div>
 
           <div class="section">
-            <h3>Discord Account</h3>
-            <div class="account-status" id="accountStatus">
+            <h3>Desktop Companion</h3>
+            <div class="companion-status" id="companionStatus">
               <div class="status-item">
                 <span class="status-label">Status:</span>
-                <span class="status-value" id="discordStatus">Not Connected</span>
+                <span class="status-value" id="companionStatusValue">Checking...</span>
               </div>
-              <div class="status-item username-item-hidden" id="usernameItem">
-                <span class="status-label">Username:</span>
-                <span class="status-value" id="discordUsername"></span>
+              <div class="status-item">
+                <span class="status-label">Discord RPC:</span>
+                <span class="status-value" id="discordRpcStatus">Checking...</span>
               </div>
-              <button id="disconnectBtn" class="disconnect-button">Disconnect</button>
+              <div class="companion-info">
+                <p class="info-text">Desktop companion provides native Discord Rich Presence. Make sure Discord desktop app is running.</p>
+                <button id="testCompanionBtn" class="test-button">Test Connection</button>
+              </div>
             </div>
           </div>
           

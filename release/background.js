@@ -94,7 +94,29 @@ class DiscordRPC {
 
   async updatePresenceViaAPI(presenceData) {
     try {
-      // Use the proper Discord Rich Presence API endpoint
+      // Try to use desktop companion first (better Rich Presence)
+      const companionResponse = await fetch('http://localhost:3000/presence', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          songInfo: {
+            title: presenceData.details.replace('Listening to ', ''),
+            artist: presenceData.state.replace('on SoundCloud ', ''),
+            url: presenceData.buttons?.[0]?.url || 'https://soundcloud.com'
+          },
+          isActive: true
+        })
+      });
+
+      if (companionResponse.ok) {
+        console.log('Rich Presence updated via desktop companion');
+        return;
+      }
+
+      // Fallback to Discord web API if companion is not available
+      console.log('Desktop companion not available, using Discord web API');
       const response = await fetch('https://discord.com/api/v9/users/@me/activities', {
         method: 'POST',
         headers: {
@@ -120,7 +142,7 @@ class DiscordRPC {
       });
 
       if (response.ok) {
-        console.log('Rich Presence updated via Discord API');
+        console.log('Rich Presence updated via Discord API (fallback)');
         const result = await response.json();
         console.log('Presence update result:', result);
       } else {
@@ -160,6 +182,21 @@ class DiscordRPC {
 
   async clearPresenceViaAPI() {
     try {
+      // Try to use desktop companion first
+      const companionResponse = await fetch('http://localhost:3000/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (companionResponse.ok) {
+        console.log('Rich Presence cleared via desktop companion');
+        return;
+      }
+
+      // Fallback to Discord web API
+      console.log('Desktop companion not available, using Discord web API');
       const response = await fetch('https://discord.com/api/v9/users/@me/activities', {
         method: 'DELETE',
         headers: {
@@ -169,7 +206,7 @@ class DiscordRPC {
       });
 
       if (response.ok) {
-        console.log('Rich Presence cleared via Discord API');
+        console.log('Rich Presence cleared via Discord API (fallback)');
       } else {
         const errorText = await response.text();
         console.log('Failed to clear presence via API:', response.status, errorText);
@@ -517,28 +554,11 @@ class DiscordPresenceManager {
 
   async handleDiscordOAuth(message, sendResponse) {
     try {
-      console.log('Handling Discord OAuth request from popup');
-      console.log('Message received:', message);
-      
-      const clientId = '1400634915942301806';
-      const redirectUri = 'https://soundcords.vercel.app/oauth-callback.html';
-      
-      // Start OAuth flow with proper scopes for Rich Presence
-      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify+activities.write`;
-      
-      // Create a new tab for OAuth (smoother than popup)
-      const authTab = await chrome.tabs.create({
-        url: authUrl,
-        active: true
-      });
-      
-      // Store tab info for later cleanup
-      this.oauthTabId = authTab.id;
-      
-      sendResponse({ success: true, message: 'OAuth flow started in new tab' });
+      console.log('Desktop companion approach - no OAuth needed');
+      sendResponse({ success: true, message: 'Using desktop companion - no OAuth required' });
     } catch (error) {
-      console.error('Failed to start Discord OAuth:', error);
-      sendResponse({ success: false, message: 'Failed to start OAuth' });
+      console.error('Error handling OAuth request:', error);
+      sendResponse({ success: false, message: 'OAuth not needed with desktop companion' });
     }
   }
 
@@ -673,15 +693,18 @@ class DiscordPresenceManager {
   }
 
   handleSongDetected(songInfo, isActive) {
-    console.log('Song detected:', songInfo, 'isActive:', isActive);
+    console.log('=== Background Script: Song detected ===');
+    console.log('Song info:', songInfo);
+    console.log('Is active:', isActive);
+    
     this.currentSong = songInfo;
     
     // Always update presence when song is detected (auto toggle is the default behavior)
     if (isActive) {
-      console.log('Song is playing, updating Discord presence');
+      console.log('✅ Song is playing, updating Discord presence');
       this.updateDiscordPresence(songInfo);
     } else {
-      console.log('Song stopped, clearing Discord presence');
+      console.log('❌ Song stopped, clearing Discord presence');
       this.clearDiscordPresence();
     }
 
@@ -752,6 +775,9 @@ class DiscordPresenceManager {
   }
 
   updateDiscordPresence(songInfo, customSettings = null) {
+    console.log('=== Background Script: Updating Discord Presence ===');
+    console.log('Song info:', songInfo);
+    
     const settings = customSettings || this.settings;
     const translations = this.getTranslations(settings.language);
 
@@ -759,11 +785,10 @@ class DiscordPresenceManager {
 
     const presenceData = {
       type: 'rich',
-      name: 'SoundCloud',
-      details: `${translations.listeningTo} ${songInfo.title}`,
-      state: `${translations.onSoundCloud} ${songInfo.artist}`,
+      details: `Listening to ${songInfo.title}`,
+      state: `${songInfo.artist} On Soundcords`,
       largeImageKey: 'soundcloud',
-      largeImageText: 'SoundCloud',
+      largeImageText: songInfo.title,
       smallImageKey: 'play',
       smallImageText: 'Playing',
       startTimestamp: Date.now()
@@ -785,8 +810,18 @@ class DiscordPresenceManager {
 
   async clearDiscordPresence() {
     try {
-      if (this.discordRPC) {
-        await this.discordRPC.clearPresence();
+      // Try to use desktop companion first
+      const companionResponse = await fetch('http://localhost:3000/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (companionResponse.ok) {
+        console.log('Rich Presence cleared via desktop companion');
+      } else {
+        console.log('Desktop companion not available for clearing');
       }
     } catch (error) {
       console.error('Failed to clear Discord presence:', error);
@@ -797,15 +832,73 @@ class DiscordPresenceManager {
   }
 
   async sendPresenceToDiscord(presenceData) {
+    console.log('=== Background Script: Sending Presence to Discord ===');
+    console.log('Presence data:', presenceData);
+    
     try {
-      // Initialize Discord Rich Presence if not already done
-      if (!this.discordRPC) {
-        this.discordRPC = new DiscordRichPresence();
-        await this.discordRPC.initialize(this.token, this.userInfo);
+      // Try to use desktop companion first (better Rich Presence)
+      console.log('Attempting to send to desktop companion...');
+      const companionResponse = await fetch('http://localhost:3000/presence', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          songInfo: {
+            title: presenceData.details.replace('Listening to ', ''),
+            artist: presenceData.state.replace(' On Soundcords', ''),
+            url: presenceData.buttons?.[0]?.url || this.currentSong?.url || 'https://soundcloud.com'
+          },
+          isActive: true
+        })
+      });
+
+      if (companionResponse.ok) {
+        console.log('✅ Rich Presence updated via desktop companion');
+        
+        // Store presence data for reference
+        chrome.storage.local.set({
+          currentPresence: presenceData,
+          lastUpdate: Date.now()
+        });
+        
+        return;
       }
 
-      // Update Discord presence
-      await this.discordRPC.updatePresence(presenceData);
+      // Fallback to Discord web API if companion is not available
+      console.log('Desktop companion not available, using Discord web API');
+      const response = await fetch('https://discord.com/api/v9/users/@me/activities', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: presenceData.name,
+          type: 2, // Listening activity type
+          state: presenceData.state,
+          details: presenceData.details,
+          timestamps: presenceData.startTimestamp ? {
+            start: presenceData.startTimestamp
+          } : undefined,
+          assets: {
+            large_image: presenceData.largeImageKey,
+            large_text: presenceData.largeImageText,
+            small_image: presenceData.smallImageKey,
+            small_text: presenceData.smallImageText
+          },
+          buttons: presenceData.buttons || []
+        })
+      });
+
+      if (response.ok) {
+        console.log('Rich Presence updated via Discord API (fallback)');
+        const result = await response.json();
+        console.log('Presence update result:', result);
+      } else {
+        const errorText = await response.text();
+        console.log('Failed to update presence via API:', response.status, errorText);
+      }
       
       // Store presence data for reference
       chrome.storage.local.set({
@@ -882,6 +975,7 @@ class DiscordPresenceManager {
 
 // Initialize the presence manager
 const presenceManager = new DiscordPresenceManager();
+presenceManager.init();
 
 // Listen for OAuth success messages from the callback page
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {

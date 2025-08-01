@@ -48,14 +48,21 @@ class SoundCloudMonitor {
   }
 
   checkForSong() {
+    console.log('=== Content Script: Checking for song ===');
     const songInfo = this.extractSongInfo();
     
     if (songInfo && this.hasSongChanged(songInfo)) {
+      console.log('✅ New song detected:', songInfo);
       this.currentSong = songInfo;
       this.notifyBackground(songInfo);
     } else if (!songInfo && this.currentSong) {
+      console.log('❌ Song stopped playing');
       this.currentSong = null;
       this.notifyBackground(null);
+    } else if (songInfo) {
+      console.log('ℹ️ Same song still playing:', songInfo.title);
+    } else {
+      console.log('ℹ️ No song detected');
     }
   }
 

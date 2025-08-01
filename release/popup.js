@@ -17,11 +17,8 @@ class PopupManager {
     this.startLogo = document.getElementById('startLogo');
     this.mainContainer = document.getElementById('mainContainer');
     
-    // Connection elements
-    this.connectionScreen = document.getElementById('connectionScreen');
+    // Main content elements
     this.mainContent = document.getElementById('mainContent');
-    this.connectDiscordBtn = document.getElementById('connectDiscordBtn');
-    this.connectionStatus = document.getElementById('connectionStatus');
     
     // Page elements
     this.mainPage = document.getElementById('mainPage');
@@ -36,9 +33,10 @@ class PopupManager {
     this.statusIndicator = document.getElementById('statusIndicator');
     this.songInfo = document.getElementById('songInfo');
     
-    // Discord account elements
-    this.discordStatus = document.getElementById('discordStatus');
-    this.disconnectBtn = document.getElementById('disconnectBtn');
+    // Desktop companion elements
+    this.companionStatusValue = document.getElementById('companionStatusValue');
+    this.discordRpcStatus = document.getElementById('discordRpcStatus');
+    this.testCompanionBtn = document.getElementById('testCompanionBtn');
     
     // Initialize new settings elements
     this.showBrowsingStatus = document.getElementById('showBrowsingStatus');
@@ -173,11 +171,6 @@ class PopupManager {
   }
 
   bindEvents() {
-    // Connection button event
-    if (this.connectDiscordBtn) {
-      this.connectDiscordBtn.addEventListener('click', () => this.connectDiscord());
-    }
-    
     // Page navigation events
     if (this.settingsBtn) {
       this.settingsBtn.addEventListener('click', () => {
@@ -192,9 +185,9 @@ class PopupManager {
       });
     }
     
-    // Discord account events
-    if (this.disconnectBtn) {
-      this.disconnectBtn.addEventListener('click', () => this.disconnectDiscord());
+    // Desktop companion events
+    if (this.testCompanionBtn) {
+      this.testCompanionBtn.addEventListener('click', () => this.testCompanionConnection());
     }
     
     // Language button events
@@ -496,68 +489,9 @@ class PopupManager {
     }
   }
 
-  showConnectionScreen() {
-    if (this.connectionScreen && this.mainContent) {
-      this.connectionScreen.style.display = 'flex';
-      this.mainContent.style.display = 'none';
-    }
-  }
-
   showMainContent() {
-    if (this.connectionScreen && this.mainContent) {
-      this.connectionScreen.style.display = 'none';
+    if (this.mainContent) {
       this.mainContent.style.display = 'block';
-    }
-  }
-
-  async connectDiscord() {
-    try {
-      // Update UI to show connecting state
-      this.updateConnectionStatus('Starting Discord authorization...', 'connecting');
-      if (this.connectDiscordBtn) {
-        this.connectDiscordBtn.disabled = true;
-        this.connectDiscordBtn.innerHTML = '<div class="spinner"></div> Connecting...';
-      }
-      
-      // Send message to background script to start OAuth
-      const response = await chrome.runtime.sendMessage({
-        type: 'DISCORD_OAUTH_REQUEST'
-      });
-      
-      if (response && response.success) {
-        this.updateConnectionStatus('Authorization tab opened. Please complete the authorization and return here.', 'connecting');
-      } else {
-        throw new Error('Failed to start OAuth flow');
-      }
-      
-    } catch (error) {
-      console.error('Failed to start OAuth:', error);
-      this.updateConnectionStatus('Failed to start authorization. Please try again.', 'error');
-      
-      // Reset button state
-      if (this.connectDiscordBtn) {
-        this.connectDiscordBtn.disabled = false;
-        this.connectDiscordBtn.innerHTML = '<span>connect Discord account</span><img src="icon_open_link.png" alt="Open Link" class="discord-icon">';
-      }
-    }
-  }
-
-  updateConnectionStatus(message, status) {
-    if (this.connectionStatus) {
-      this.connectionStatus.textContent = message;
-      this.connectionStatus.className = `status-text ${status}`;
-      
-      // Add visual feedback for connecting state
-      if (status === 'connecting') {
-        this.connectionStatus.style.color = '#5865F2';
-        this.connectionStatus.style.fontWeight = '500';
-      } else if (status === 'error') {
-        this.connectionStatus.style.color = '#ff6b6b';
-        this.connectionStatus.style.fontWeight = '500';
-      } else {
-        this.connectionStatus.style.color = '#ffffff';
-        this.connectionStatus.style.fontWeight = 'normal';
-      }
     }
   }
 
@@ -614,31 +548,88 @@ class PopupManager {
 
   async checkConnectionStatus() {
     try {
-      const result = await chrome.storage.sync.get(['isConnected', 'discordUser']);
-      console.log('Checking connection status:', result);
-      
-      const isConnected = result.isConnected;
-      const hasUserInfo = result.discordUser && result.discordUser.username;
-      
-      if (isConnected && hasUserInfo) {
-        // User is connected, show main content
-        console.log('User is connected, showing main content');
-        this.showMainContent();
-        await this.updateDiscordStatus(true);
-      } else {
-        // User is not connected, show connection screen
-        console.log('User is not connected, showing connection screen');
-        this.showConnectionScreen();
-        await this.updateDiscordStatus(false);
-      }
+      // Check desktop companion status
+      await this.checkCompanionStatus();
+      this.showMainContent();
       
       // Load other settings
       await this.loadOtherSettings();
     } catch (error) {
       console.error('Failed to check connection status:', error);
-      // Default to connection screen on error
-      this.showConnectionScreen();
-      await this.updateDiscordStatus(false);
+      this.showMainContent();
+    }
+  }
+
+  async checkCompanionStatus() {
+    try {
+      // Check if desktop companion is running
+      const response = await fetch('http://localhost:3000/health');
+      if (response.ok) {
+        const data = await response.json();
+        this.updateCompanionStatus(true, data.discordConnected);
+      } else {
+        this.updateCompanionStatus(false, false);
+      }
+    } catch (error) {
+      console.log('Desktop companion not available:', error);
+      this.updateCompanionStatus(false, false);
+    }
+  }
+
+  updateCompanionStatus(companionConnected, discordConnected) {
+    if (this.companionStatusValue) {
+      this.companionStatusValue.textContent = companionConnected ? 'Connected' : 'Not Connected';
+      this.companionStatusValue.className = companionConnected ? 'status-value connected' : 'status-value disconnected';
+    }
+    
+    if (this.discordRpcStatus) {
+      this.discordRpcStatus.textContent = discordConnected ? 'Connected' : 'Not Connected';
+      this.discordRpcStatus.className = discordConnected ? 'status-value connected' : 'status-value disconnected';
+    }
+  }
+
+  async testCompanionConnection() {
+    try {
+      if (this.testCompanionBtn) {
+        this.testCompanionBtn.textContent = 'Testing...';
+        this.testCompanionBtn.disabled = true;
+      }
+
+      // Test companion connection
+      const response = await fetch('http://localhost:3000/presence', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          songInfo: {
+            title: 'Test Song',
+            artist: 'Test Artist',
+            url: 'https://soundcloud.com/test'
+          },
+          isActive: true
+        })
+      });
+
+      if (response.ok) {
+        console.log('Desktop companion test successful');
+        this.updateCompanionStatus(true, true);
+        // Clear test presence after 3 seconds
+        setTimeout(() => {
+          fetch('http://localhost:3000/clear', { method: 'POST' });
+        }, 3000);
+      } else {
+        console.log('Desktop companion test failed');
+        this.updateCompanionStatus(false, false);
+      }
+    } catch (error) {
+      console.error('Error testing companion connection:', error);
+      this.updateCompanionStatus(false, false);
+    } finally {
+      if (this.testCompanionBtn) {
+        this.testCompanionBtn.textContent = 'Test Connection';
+        this.testCompanionBtn.disabled = false;
+      }
     }
   }
 
