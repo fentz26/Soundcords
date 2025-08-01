@@ -492,7 +492,7 @@ class DiscordPresenceManager {
       
       const clientId = '1400634915942301806';
       const clientSecret = 'pCshhHlz7qbSLhz2yR6DbrQxSE3GW9ir'; // You'll need to add this
-      const redirectUri = 'https://soundcords-bs6bcxz6e-fentzzz.vercel.app/oauth-callback.html';
+      const redirectUri = 'https://soundcords-o7s7vh90a-fentzzz.vercel.app/oauth-callback.html';
       
       // Start OAuth flow
       const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
@@ -515,7 +515,7 @@ class DiscordPresenceManager {
       console.log('OAuth code received:', message.code);
       
       // Use Vercel API for secure token exchange
-      const vercelApiUrl = 'https://soundcords-bs6bcxz6e-fentzzz.vercel.app/api/discord-oauth';
+      const vercelApiUrl = 'https://soundcords-o7s7vh90a-fentzzz.vercel.app/api/discord-oauth';
       
       const response = await fetch(vercelApiUrl, {
         method: 'POST',
@@ -524,7 +524,7 @@ class DiscordPresenceManager {
         },
         body: JSON.stringify({
           code: message.code,
-          redirectUri: 'https://soundcords-bs6bcxz6e-fentzzz.vercel.app/oauth-callback.html'
+          redirectUri: 'https://soundcords-b3nz7pd8d-fentzzz.vercel.app/oauth-callback.html'
         }),
       });
       

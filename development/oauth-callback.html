@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soundcords - OAuth Callback</title>
+    
+    <!-- Critical CSS to prevent layout shift -->
     <style>
         * {
             margin: 0;
@@ -19,8 +21,9 @@
             color: #ffffff;
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            padding-top: 20vh;
         }
         
         @keyframes gradientShift {
@@ -67,6 +70,10 @@
             margin-top: 20px;
         }
         
+        .message.hidden {
+            display: none;
+        }
+        
         .spinner {
             display: inline-block;
             width: 20px;
@@ -82,6 +89,9 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    
+    <!-- External CSS for non-critical styles -->
+    <link rel="stylesheet" href="oauth-callback.css">
 </head>
 <body>
     <div class="container">
@@ -90,7 +100,7 @@
             <div class="spinner"></div>
             Processing Discord authorization...
         </div>
-        <div id="message" class="message" style="display: none;">
+        <div id="message" class="message hidden">
             You can close this window and return to the extension.
         </div>
     </div>
@@ -108,7 +118,7 @@
             // Handle OAuth error
             statusEl.className = 'status error';
             statusEl.innerHTML = `Authorization failed: ${error}`;
-            messageEl.style.display = 'block';
+            messageEl.classList.remove('hidden');
             messageEl.textContent = 'Please try again from the extension.';
         } else if (code) {
             // Process the authorization code
@@ -130,7 +140,7 @@
                 if (data.success) {
                     statusEl.className = 'status success';
                     statusEl.innerHTML = '✅ Discord connected successfully!';
-                    messageEl.style.display = 'block';
+                    messageEl.classList.remove('hidden');
                     
                     // Send message to extension if it's listening
                     if (window.opener) {
@@ -146,14 +156,14 @@
             .catch(err => {
                 statusEl.className = 'status error';
                 statusEl.innerHTML = `❌ Authorization failed: ${err.message}`;
-                messageEl.style.display = 'block';
+                messageEl.classList.remove('hidden');
                 messageEl.textContent = 'Please try again from the extension.';
             });
         } else {
             // No code or error parameter
             statusEl.className = 'status error';
             statusEl.innerHTML = '❌ Invalid authorization request';
-            messageEl.style.display = 'block';
+            messageEl.classList.remove('hidden');
             messageEl.textContent = 'Please try again from the extension.';
         }
     </script>
