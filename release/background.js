@@ -456,6 +456,15 @@ class DiscordPresenceManager {
         case 'OAUTH_CODE_RECEIVED':
           this.handleOAuthCodeReceived(message, sendResponse);
           return true; // Keep message channel open for async response
+        case 'RESTORE_LAST_STATE':
+          this.handleRestoreLastState(message, sendResponse);
+          return true; // Keep message channel open for async response
+        case 'SHOW_DEFAULT_INTERFACE':
+          this.handleShowDefaultInterface(sendResponse);
+          return true; // Keep message channel open for async response
+        case 'SAVE_CURRENT_STATE':
+          this.handleSaveCurrentState(message, sendResponse);
+          return true; // Keep message channel open for async response
       }
     });
   }
@@ -491,7 +500,6 @@ class DiscordPresenceManager {
       console.log('Handling Discord OAuth request');
       
       const clientId = '1400634915942301806';
-      const clientSecret = 'pCshhHlz7qbSLhz2yR6DbrQxSE3GW9ir'; // You'll need to add this
       const redirectUri = 'https://soundcords-o7s7vh90a-fentzzz.vercel.app/oauth-callback.html';
       
       // Start OAuth flow
@@ -524,7 +532,7 @@ class DiscordPresenceManager {
         },
         body: JSON.stringify({
           code: message.code,
-          redirectUri: 'https://soundcords-b3nz7pd8d-fentzzz.vercel.app/oauth-callback.html'
+          redirectUri: 'https://soundcords-o7s7vh90a-fentzzz.vercel.app/oauth-callback.html'
         }),
       });
       
@@ -584,6 +592,58 @@ class DiscordPresenceManager {
       sendResponse({ success: true });
     } catch (error) {
       console.error('Failed to clear Discord RPC:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+
+  async handleRestoreLastState(message, sendResponse) {
+    try {
+      console.log('Restoring last state:', message.pageState, message.activeTab);
+      
+      // Send message to popup to restore state
+      chrome.runtime.sendMessage({
+        type: 'RESTORE_LAST_STATE',
+        pageState: message.pageState,
+        activeTab: message.activeTab
+      });
+      
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Failed to restore last state:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+
+  async handleShowDefaultInterface(sendResponse) {
+    try {
+      console.log('Showing default interface');
+      
+      // Send message to popup to show default interface
+      chrome.runtime.sendMessage({
+        type: 'SHOW_DEFAULT_INTERFACE'
+      });
+      
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Failed to show default interface:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+
+  async handleSaveCurrentState(message, sendResponse) {
+    try {
+      console.log('Saving current state:', message.pageState, message.activeTab);
+      
+      // Save state to storage
+      await chrome.storage.local.set({
+        lastPageState: message.pageState,
+        lastActiveTab: message.activeTab,
+        lastSaveTime: Date.now()
+      });
+      
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('Failed to save current state:', error);
       sendResponse({ success: false, error: error.message });
     }
   }

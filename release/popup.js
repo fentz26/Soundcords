@@ -1,7 +1,7 @@
 class PopupManager {
   constructor() {
     this.initializeElements();
-    this.startLoadingSequence();
+    this.initializeUpdateChecker();
     this.checkConnectionStatus();
     this.bindEvents();
     this.updateStatus();
@@ -50,83 +50,96 @@ class PopupManager {
     this.showArtistAsPresence = document.getElementById('showArtistAsPresence');
   }
 
-  startLoadingSequence() {
-    // Check if we should show update check (every 10 minutes)
-    const lastUpdateCheck = localStorage.getItem('lastUpdateCheck');
-    const now = Date.now();
-    const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
-    
-    if (!lastUpdateCheck || (now - parseInt(lastUpdateCheck)) >= tenMinutes) {
-      // Show update check
-      this.updateLoadingStatus('check for update.');
-      localStorage.setItem('lastUpdateCheck', now.toString());
+  async initializeUpdateChecker() {
+    try {
+      // Load the update checker and loading animation
+      await this.loadUpdateChecker();
       
-      // Hide loading screen and start main animation after 2 seconds
-      setTimeout(() => {
-        this.hideLoadingScreen();
-      }, 2000);
-    } else {
-      // Skip loading and animation, immediately show final state
-      if (this.startLogo) {
-        // Immediately position logo at top without any center animation
-        this.startLogo.style.position = 'absolute';
-        this.startLogo.style.top = '20px';
-        this.startLogo.style.left = '50%';
-        this.startLogo.style.transform = 'translate(-50%, 0)';
-        this.startLogo.style.animation = 'none';
-        this.startLogo.style.opacity = '1';
-        this.startLogo.style.zIndex = '1';
-      }
-      if (this.mainContainer) {
-        this.mainContainer.classList.add('show');
-      }
-      this.hideLoadingScreen();
+      // Initialize the update checker
+      await this.updateChecker.initialize();
+    } catch (error) {
+      console.error('Failed to initialize update checker:', error);
+      // Fallback to default interface
+      this.showDefaultInterface();
     }
   }
 
-  updateLoadingStatus(message) {
-    if (this.loadingStatus) {
-      this.loadingStatus.textContent = message;
+  async loadUpdateChecker() {
+    // Create update checker instance
+    this.updateChecker = new UpdateChecker();
+    
+    // Create loading animation instance
+    this.loadingAnimation = new LoadingAnimation();
+    
+    // Set up message listeners for state management
+    this.setupStateListeners();
+  }
+
+  setupStateListeners() {
+    // Listen for messages from update checker
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      switch (message.type) {
+        case 'RESTORE_LAST_STATE':
+          this.restoreLastState(message.pageState, message.activeTab);
+          break;
+        case 'SHOW_DEFAULT_INTERFACE':
+          this.showDefaultInterface();
+          break;
+        case 'SAVE_CURRENT_STATE':
+          this.saveCurrentState(message.pageState, message.activeTab);
+          break;
+      }
+    });
+  }
+
+  async restoreLastState(pageState, activeTab) {
+    console.log('Restoring last state:', pageState, activeTab);
+    
+    // Hide loading screen immediately
+    this.hideLoadingScreen();
+    
+    // Restore to specific page if provided
+    if (pageState === 'settings') {
+      this.showSettingsPage();
+    } else {
+      this.showMainPage();
     }
+    
+    // Show main container
+    this.showMainContainer();
+  }
+
+  showDefaultInterface() {
+    console.log('Showing default interface');
+    
+    // Hide loading screen
+    this.hideLoadingScreen();
+    
+    // Show main container with default state
+    this.showMainContainer();
+    
+    // Show main page by default
+    this.showMainPage();
+  }
+
+  saveCurrentState(pageState, activeTab) {
+    // Save current page state
+    chrome.storage.local.set({
+      lastPageState: pageState,
+      lastActiveTab: activeTab,
+      lastSaveTime: Date.now()
+    });
   }
 
   hideLoadingScreen() {
     if (this.loadingScreen) {
       this.loadingScreen.classList.add('hide');
-      
-      // Start main animation after loading screen fades out
-      setTimeout(() => {
-        this.startAnimation();
-      }, 500);
-    }
-  }
-
-  startAnimation() {
-    // Wait for logo to fade in, then start the sequence
-    setTimeout(() => {
-      this.moveLogoToHeader();
-    }, 1000); // Wait 1 second for logo to fade in
-  }
-
-  moveLogoToHeader() {
-    if (this.startLogo) {
-      // Add animation class to move logo to header position
-      this.startLogo.style.animation = 'logoMoveToHeader 0.8s ease-out forwards';
-      
-      // After logo moves, show main container
-      setTimeout(() => {
-        this.showMainContainer();
-      }, 800);
     }
   }
 
   showMainContainer() {
     if (this.mainContainer) {
-      // Show main container with fade-in animation
       this.mainContainer.classList.add('show');
-      
-      // Keep the logo visible - it's now in the header position
-      // No need to hide it since it transforms into the final position
     }
   }
 
@@ -138,10 +151,16 @@ class PopupManager {
     
     // Page navigation events
     if (this.settingsBtn) {
-      this.settingsBtn.addEventListener('click', () => this.showSettingsPage());
+      this.settingsBtn.addEventListener('click', () => {
+        this.showSettingsPage();
+        this.saveCurrentState('settings', 'settings');
+      });
     }
     if (this.backBtn) {
-      this.backBtn.addEventListener('click', () => this.showMainPage());
+      this.backBtn.addEventListener('click', () => {
+        this.showMainPage();
+        this.saveCurrentState('main', 'main');
+      });
     }
     
     // Discord account events
@@ -581,16 +600,12 @@ class PopupManager {
     }
   }
 
-
-
   updateConnectionStatus(message, status) {
     if (this.connectionStatus) {
       this.connectionStatus.textContent = message;
       this.connectionStatus.className = `status-text ${status}`;
     }
   }
-
-
 
   async loadOtherSettings() {
     const settings = await chrome.storage.sync.get({
