@@ -1,0 +1,21 @@
+# Environment Variables Template
+# Copy this file to .env and fill in your actual values
+
+# Discord OAuth Configuration
+# Get these values from https://discord.com/developers/applications
+
+# Your Discord Application Client Secret
+# This is used for OAuth token exchange
+DISCORD_CLIENT_SECRET=your_discord_client_secret_here
+
+# Discord Application Client ID (already configured in the code)
+# DISCORD_CLIENT_ID=1400634915942301806
+
+# Optional: Custom redirect URI (if different from default)
+# REDIRECT_URI=https://your-vercel-app.vercel.app/api/discord-oauth
+
+# Instructions:
+# 1. Copy this file to .env
+# 2. Replace 'your_discord_client_secret_here' with your actual Discord client secret
+# 3. Add this .env file to Vercel environment variables
+# 4. Never commit the actual .env file to git (it should be in .gitignore) 
