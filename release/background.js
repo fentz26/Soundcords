@@ -880,13 +880,13 @@ class DiscordPresenceManager {
 const presenceManager = new DiscordPresenceManager();
 
 // Listen for OAuth success messages from the callback page
-window.addEventListener('message', async (event) => {
-  if (event.data && event.data.type === 'DISCORD_OAUTH_SUCCESS') {
-    console.log('OAuth success received from callback page:', event.data);
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+  if (message.type === 'DISCORD_OAUTH_SUCCESS') {
+    console.log('OAuth success received from callback page:', message);
     
     try {
       // Handle the OAuth success
-      const { data } = event.data;
+      const { data } = message;
       
       // Save user info and token
       await chrome.storage.sync.set({
@@ -927,9 +927,15 @@ window.addEventListener('message', async (event) => {
         // Popup might not be open, ignore error
       });
       
+      // Send response back to the callback page
+      sendResponse({ success: true });
+      
     } catch (error) {
       console.error('Failed to handle OAuth success:', error);
+      sendResponse({ success: false, error: error.message });
     }
+    
+    return true; // Keep the message channel open for async response
   }
 });
 

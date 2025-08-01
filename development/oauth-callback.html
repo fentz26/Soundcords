@@ -21,17 +21,21 @@
         
         body {
             font-family: 'Megna', sans-serif;
-            background: #000000;
+            background: #0B0B0B;
             color: #ffffff;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         .container {
-            max-width: 400px;
+            max-width: 600px;
             padding: 40px 20px;
         }
         
@@ -40,7 +44,7 @@
         }
         
         .logo img {
-            width: 200px;
+            width: 300px;
             height: auto;
         }
         
@@ -48,20 +52,21 @@
             font-size: 18px;
             font-family: 'Megna', sans-serif;
             color: #ffffff;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            white-space: nowrap;
         }
         
         .success {
-            color: #4CAF50;
+            color: #ffffff;
         }
         
         .error {
-            color: #F44336;
+            color: #ffffff;
         }
         
         .message {
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
+            color: #7C7C7C;
             font-family: 'Megna', sans-serif;
         }
         
@@ -126,6 +131,16 @@
                             type: 'DISCORD_OAUTH_SUCCESS',
                             data: data
                         }, '*');
+                    }
+                    
+                    // Also try to send message to the extension directly
+                    if (typeof chrome !== 'undefined' && chrome.runtime) {
+                        chrome.runtime.sendMessage({
+                            type: 'DISCORD_OAUTH_SUCCESS',
+                            data: data
+                        }).catch(() => {
+                            // Extension might not be listening, ignore error
+                        });
                     }
                 } else {
                     throw new Error(data.error || 'Authorization failed');
