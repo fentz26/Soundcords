@@ -12,6 +12,14 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (req.method === 'GET') {
+    // Return a simple response for GET requests (for testing/health check)
+    return res.status(200).json({ 
+      message: 'Discord OAuth endpoint is working',
+      status: 'ready'
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
