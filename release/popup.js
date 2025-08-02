@@ -5,6 +5,7 @@ class PopupManager {
     this.checkConnectionStatus();
     this.bindEvents();
     this.updateStatus();
+    this.updateToggleButtonState(); // Initialize button state
     this.setupMessageListeners();
   }
 
@@ -368,20 +369,20 @@ class PopupManager {
     };
 
     console.log('Saving settings:', settings);
-    await chrome.storage.sync.set(settings);
+    await chrome.storage.local.set(settings);
     
     // Notify background script of settings change
     chrome.runtime.sendMessage({
-      type: 'SETTINGS_UPDATED',
+      action: 'updateSettings',
       settings: settings
     });
   }
 
   async updateStatus() {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_STATUS' });
+      const response = await chrome.runtime.sendMessage({ action: 'getCurrentSong' });
       
-      if (response && response.active) {
+      if (response && response.songInfo) {
         this.updateStatusIndicator(true);
         this.updateSongInfo(response.songInfo);
       } else {
@@ -430,21 +431,28 @@ class PopupManager {
   }
 
   async testPresence() {
+    console.log('testPresence called');
+    
     // Toggle presence state
-    const currentSettings = await chrome.storage.sync.get({
+    const currentSettings = await chrome.storage.local.get({
       enablePresence: true
     });
     const newEnablePresence = !currentSettings.enablePresence;
     
+    console.log('Current enablePresence:', currentSettings.enablePresence);
+    console.log('New enablePresence:', newEnablePresence);
+    
     // Save the updated settings
-    await chrome.storage.sync.set({ enablePresence: newEnablePresence });
+    await chrome.storage.local.set({ enablePresence: newEnablePresence });
     
     // Send message to background script to update presence immediately
     try {
-      await chrome.runtime.sendMessage({
-        type: 'TOGGLE_PRESENCE',
+      const response = await chrome.runtime.sendMessage({
+        action: 'togglePresence',
         enablePresence: newEnablePresence
       });
+      
+      console.log('Background script response:', response);
       
       // Update button text and style based on new state
       this.updateToggleButtonState();
@@ -455,7 +463,7 @@ class PopupManager {
 
   updateToggleButtonState() {
     // Get current presence state
-    chrome.storage.sync.get({ enablePresence: true }, (settings) => {
+    chrome.storage.local.get({ enablePresence: true }, (settings) => {
       const isEnabled = settings.enablePresence;
       
       // Update button text and classes
@@ -496,7 +504,7 @@ class PopupManager {
   }
 
   async loadOtherSettings() {
-    const settings = await chrome.storage.sync.get({
+    const settings = await chrome.storage.local.get({
       language: 'en',
       showBrowsingStatus: true,
       showCurrentSong: true,

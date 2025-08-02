@@ -217,8 +217,14 @@ body {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* Firefox scrollbar hiding */
+@supports (scrollbar-width: none) {
+  .main-content {
+    scrollbar-width: none;
+  }
 }
 
 .main-content::-webkit-scrollbar {
@@ -295,9 +301,15 @@ body {
   padding: 20px;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
   animation: fadeInUp 0.5s ease-out;
+}
+
+/* Firefox scrollbar hiding */
+@supports (scrollbar-width: none) {
+  .page-content {
+    scrollbar-width: none;
+  }
 }
 
 .page-content::-webkit-scrollbar {

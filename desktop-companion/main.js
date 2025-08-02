@@ -41,31 +41,67 @@ class SoundcordsCompanion {
           });
           res.on('end', () => {
             try {
-              // Look for artwork URL in the HTML
-              const artworkMatch = data.match(/"artwork_url":"([^"]+)"/);
-              if (artworkMatch && artworkMatch[1]) {
-                // Convert to high quality version
-                const artworkUrl = artworkMatch[1].replace('t500x500', 't300x300');
+              // Look for artwork URL in the HTML - multiple patterns
+              let artworkUrl = null;
+              
+              // Pattern 1: Look for artwork_url in JSON data
+              const artworkMatch1 = data.match(/"artwork_url":"([^"]+)"/);
+              if (artworkMatch1 && artworkMatch1[1]) {
+                artworkUrl = artworkMatch1[1].replace('t500x500', 't300x300');
+                console.log('Found artwork URL (pattern 1):', artworkUrl);
                 resolve(artworkUrl);
-              } else {
-                resolve(null);
+                return;
               }
+              
+              // Pattern 2: Look for og:image meta tag
+              const ogImageMatch = data.match(/<meta property="og:image" content="([^"]+)"/);
+              if (ogImageMatch && ogImageMatch[1]) {
+                artworkUrl = ogImageMatch[1];
+                console.log('Found artwork URL (og:image):', artworkUrl);
+                resolve(artworkUrl);
+                return;
+              }
+              
+              // Pattern 3: Look for twitter:image meta tag
+              const twitterImageMatch = data.match(/<meta name="twitter:image" content="([^"]+)"/);
+              if (twitterImageMatch && twitterImageMatch[1]) {
+                artworkUrl = twitterImageMatch[1];
+                console.log('Found artwork URL (twitter:image):', artworkUrl);
+                resolve(artworkUrl);
+                return;
+              }
+              
+              // Pattern 4: Look for any image with "artwork" in the URL
+              const artworkUrlMatch = data.match(/https:\/\/[^"]*artwork[^"]*\.(?:jpg|jpeg|png|gif|webp)/i);
+              if (artworkUrlMatch) {
+                artworkUrl = artworkUrlMatch[0];
+                console.log('Found artwork URL (generic):', artworkUrl);
+                resolve(artworkUrl);
+                return;
+              }
+              
+              console.log('No artwork URL found in page');
+              resolve(null);
             } catch (error) {
+              console.log('Error parsing artwork URL:', error);
               resolve(null);
             }
           });
         });
         
         req.on('error', (error) => {
+          console.log('Error fetching page:', error);
           resolve(null);
         });
         
         req.setTimeout(5000, () => {
           req.destroy();
+          console.log('Request timeout');
           resolve(null);
         });
       });
     } catch (error) {
+      console.log('Error in extractArtworkUrl:', error);
       return null;
     }
   }
@@ -196,12 +232,26 @@ class SoundcordsCompanion {
           artworkUrl = await this.extractArtworkUrl(songInfo.url);
           console.log('Extracted artwork URL:', artworkUrl);
           if (artworkUrl) {
-            largeImageKey = artworkUrl;
+            // For Discord RPC, we need to use asset keys that are uploaded to Discord
+            // For now, we'll use the default SoundCloud asset
+            largeImageKey = 'soundcloud';
             largeImageText = songInfo.title;
+            console.log('Using SoundCloud asset for artwork');
+          } else {
+            // Fallback to default SoundCloud artwork
+            largeImageKey = 'soundcloud';
+            largeImageText = 'SoundCloud';
+            console.log('Using fallback SoundCloud artwork');
           }
         } catch (error) {
           console.log('Could not extract artwork URL:', error);
+          // Fallback to default SoundCloud artwork
+          largeImageKey = 'soundcloud';
+          largeImageText = 'SoundCloud';
         }
+
+        console.log('Final largeImageKey:', largeImageKey);
+        console.log('Final largeImageText:', largeImageText);
 
         // Get current time for timestamps
         const startTimestamp = Date.now();
@@ -215,11 +265,11 @@ class SoundcordsCompanion {
           // Set the activity type to 'LISTENING' to get the "Listening to" text
           type: 'LISTENING',
           
-          // Main line of text - artist and song title
-          details: `${songInfo.artist} - ${songInfo.title}`,
+          // Main line shows the artist name (what appears after "Listening to")
+          details: songInfo.artist,
           
-          // Subtitle - can be used for additional info
-          state: 'On Soundcords',
+          // Second line shows the full song title
+          state: `${songInfo.artist} - ${songInfo.title}`,
           
           // Timestamps for progress bar
           startTimestamp: startTimestamp,

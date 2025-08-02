@@ -51,6 +51,8 @@ class SoundCloudMonitor {
     console.log('=== Content Script: Checking for song ===');
     const songInfo = this.extractSongInfo();
     
+    console.log('ExtractSongInfo result:', songInfo);
+    
     if (songInfo && this.hasSongChanged(songInfo)) {
       console.log('✅ New song detected:', songInfo);
       this.currentSong = songInfo;
@@ -67,7 +69,15 @@ class SoundCloudMonitor {
   }
 
   extractSongInfo() {
-    console.log('Extracting song info from SoundCloud page...');
+    console.log('=== Content Script: Extracting song info from SoundCloud page ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Page title:', document.title);
+    
+    // Debug: Check if we can find any elements at all
+    console.log('Total elements on page:', document.querySelectorAll('*').length);
+    console.log('Elements with "title" in class:', document.querySelectorAll('[class*="title"]').length);
+    console.log('Elements with "play" in class:', document.querySelectorAll('[class*="play"]').length);
+    console.log('Elements with "control" in class:', document.querySelectorAll('[class*="control"]').length);
     
     // Try multiple selectors for different SoundCloud layouts
     const titleSelectors = [
@@ -108,12 +118,24 @@ class SoundCloudMonitor {
     let artistElement = null;
 
     // Find title with debugging
-    for (const selector of titleSelectors) {
+    console.log('Trying to find title element...');
+    console.log('Total title selectors to try:', titleSelectors.length);
+    
+    for (let i = 0; i < titleSelectors.length; i++) {
+      const selector = titleSelectors[i];
       titleElement = document.querySelector(selector);
       if (titleElement) {
-        console.log('Found title element with selector:', selector, 'Text:', titleElement.textContent);
+        console.log('✅ Found title element with selector:', selector, 'Text:', titleElement.textContent);
         break;
+      } else {
+        if (i < 5) { // Only log first 5 failures to avoid spam
+          console.log('❌ Selector not found:', selector);
+        }
       }
+    }
+    
+    if (!titleElement) {
+      console.log('❌ No title element found with any selector');
     }
 
     // Find artist - try more comprehensive selectors
@@ -140,11 +162,14 @@ class SoundCloudMonitor {
       '[class*="Artist"]'
     ];
 
+    console.log('Trying to find artist element...');
     for (const selector of artistSelectors) {
       artistElement = document.querySelector(selector);
       if (artistElement) {
-        console.log('Found artist element with selector:', selector, 'Text:', artistElement.textContent);
+        console.log('✅ Found artist element with selector:', selector, 'Text:', artistElement.textContent);
         break;
+      } else {
+        console.log('❌ Artist selector not found:', selector);
       }
     }
 
@@ -158,18 +183,24 @@ class SoundCloudMonitor {
     // Additional fallback: try to extract from the page title
     if (!titleElement && document.title) {
       console.log('Trying to extract from page title:', document.title);
+      console.log('Page title length:', document.title.length);
+      console.log('Page title contains "by":', document.title.includes('by'));
+      console.log('Page title contains "|":', document.title.includes('|'));
+      
       const titleMatch = document.title.match(/^(.+?)\s+by\s+(.+?)\s+\|/);
       if (titleMatch) {
         titleElement = { textContent: titleMatch[1].trim() };
         artistElement = { textContent: titleMatch[2].trim() };
-        console.log('Extracted from page title - Title:', titleMatch[1], 'Artist:', titleMatch[2]);
+        console.log('✅ Extracted from page title - Title:', titleMatch[1], 'Artist:', titleMatch[2]);
       } else {
         // Try simpler pattern
         const simpleMatch = document.title.match(/^(.+?)\s+by\s+(.+?)$/);
         if (simpleMatch) {
           titleElement = { textContent: simpleMatch[1].trim() };
           artistElement = { textContent: simpleMatch[2].trim() };
-          console.log('Extracted from page title (simple) - Title:', simpleMatch[1], 'Artist:', simpleMatch[2]);
+          console.log('✅ Extracted from page title (simple) - Title:', simpleMatch[1], 'Artist:', simpleMatch[2]);
+        } else {
+          console.log('❌ Could not extract from page title with any pattern');
         }
       }
     }
@@ -261,23 +292,66 @@ class SoundCloudMonitor {
     // Check if audio is actually playing
     const isPlaying = this.isAudioPlaying();
 
-    console.log('Extracted song info:', { title, artist, url: songUrl, isPlaying });
+    console.log('=== Content Script: Final song info ===');
+    console.log('Title:', title);
+    console.log('Artist:', artist);
+    console.log('URL:', songUrl);
+    console.log('Is Playing:', isPlaying);
 
     if (!title || !isPlaying) {
-      console.log('Missing title or not playing, returning null');
+      console.log('❌ Missing title or not playing, returning null');
       return null;
+    }
+    
+    console.log('✅ Valid song info found');
+
+    // Try to get song duration from audio element or progress indicators
+    let duration = null;
+    
+    // Look for audio elements
+    const audioElements = document.querySelectorAll('audio, video');
+    for (const audio of audioElements) {
+      if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+        duration = Math.floor(audio.duration);
+        console.log('Found duration from audio element:', duration);
+        break;
+      }
+    }
+    
+    // Try to extract duration from time display
+    if (!duration) {
+      const timeSelectors = [
+        '.playbackTimeline__duration',
+        '.playbackControls__duration',
+        '[class*="duration"]',
+        '[class*="Duration"]'
+      ];
+      
+      for (const selector of timeSelectors) {
+        const timeElement = document.querySelector(selector);
+        if (timeElement) {
+          const timeText = timeElement.textContent?.trim();
+          const match = timeText?.match(/(\d{1,2}):(\d{2})/);
+          if (match) {
+            duration = parseInt(match[1]) * 60 + parseInt(match[2]);
+            console.log('Found duration from time display:', duration, 'seconds');
+            break;
+          }
+        }
+      }
     }
 
     return {
       title: title,
       artist: artist,
       url: songUrl,
+      duration: duration, // Add duration to song info
       timestamp: Date.now()
     };
   }
 
   isAudioPlaying() {
-    console.log('Checking if audio is playing...');
+    console.log('=== Content Script: Checking if audio is playing ===');
     
     // Check for play button state
     const playButton = document.querySelector('.playControl');
@@ -308,19 +382,25 @@ class SoundCloudMonitor {
       '.playControl[aria-label*="pause"]'
     ];
 
+    console.log('Checking playing indicators...');
     for (const selector of playingIndicators) {
       const element = document.querySelector(selector);
       if (element) {
-        console.log('Found playing indicator:', selector);
+        console.log('✅ Found playing indicator:', selector);
         return true;
+      } else {
+        console.log('❌ Playing indicator not found:', selector);
       }
     }
 
     // Check for audio element state
+    console.log('Checking audio/video elements...');
     const audioElements = document.querySelectorAll('audio, video');
+    console.log('Found audio/video elements:', audioElements.length);
     for (const audio of audioElements) {
+      console.log('Audio element - paused:', audio.paused, 'ended:', audio.ended, 'currentTime:', audio.currentTime);
       if (!audio.paused && !audio.ended && audio.currentTime > 0) {
-        console.log('Found playing audio/video element');
+        console.log('✅ Found playing audio/video element');
         return true;
       }
     }
@@ -336,10 +416,14 @@ class SoundCloudMonitor {
     }
 
     // Check for any element with "pause" in aria-label (indicates playing)
+    console.log('Checking for pause elements...');
     const pauseElements = document.querySelectorAll('[aria-label*="pause"], [aria-label*="Pause"]');
+    console.log('Found pause elements:', pauseElements.length);
     for (const element of pauseElements) {
-      if (element.getAttribute('aria-label').toLowerCase().includes('pause')) {
-        console.log('Found pause element (indicates playing):', element.getAttribute('aria-label'));
+      const ariaLabel = element.getAttribute('aria-label');
+      console.log('Pause element aria-label:', ariaLabel);
+      if (ariaLabel && ariaLabel.toLowerCase().includes('pause')) {
+        console.log('✅ Found pause element (indicates playing):', ariaLabel);
         return true;
       }
     }
@@ -365,7 +449,7 @@ class SoundCloudMonitor {
       console.log('Full song info:', songInfo);
       
       chrome.runtime.sendMessage({
-        type: 'SONG_DETECTED',
+        action: 'updateSong',
         songInfo: songInfo,
         isActive: true
       }, (response) => {
@@ -374,7 +458,7 @@ class SoundCloudMonitor {
     } else {
       console.log('=== Content Script: Clearing Song ===');
       chrome.runtime.sendMessage({
-        type: 'SONG_DETECTED',
+        action: 'updateSong',
         songInfo: null,
         isActive: false
       });

@@ -46,17 +46,10 @@ class DiscordRPC {
 
   async checkDiscordRunning() {
     try {
-      // Try to connect to Discord's RPC endpoint
-      const response = await fetch('https://discord.com/api/v9/users/@me', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      return response.ok;
+      // This would check if Discord is running
+      return false;
     } catch (error) {
-      console.log('Discord web API not accessible:', error);
+      console.error('Error checking Discord status:', error);
       return false;
     }
   }
@@ -94,29 +87,6 @@ class DiscordRPC {
 
   async updatePresenceViaAPI(presenceData) {
     try {
-      // Try to use desktop companion first (better Rich Presence)
-      const companionResponse = await fetch('http://localhost:3000/presence', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          songInfo: {
-            title: presenceData.details.replace('Listening to ', ''),
-            artist: presenceData.state.replace('on SoundCloud ', ''),
-            url: presenceData.buttons?.[0]?.url || 'https://soundcloud.com'
-          },
-          isActive: true
-        })
-      });
-
-      if (companionResponse.ok) {
-        console.log('Rich Presence updated via desktop companion');
-        return;
-      }
-
-      // Fallback to Discord web API if companion is not available
-      console.log('Desktop companion not available, using Discord web API');
       const response = await fetch('https://discord.com/api/v9/users/@me/activities', {
         method: 'POST',
         headers: {
@@ -124,8 +94,8 @@ class DiscordRPC {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          name: presenceData.details,
-          type: 2, // Listening activity type
+          name: "SoundCloud",
+          type: 2,
           state: presenceData.state,
           details: presenceData.details,
           timestamps: presenceData.startTimestamp ? {
@@ -142,7 +112,7 @@ class DiscordRPC {
       });
 
       if (response.ok) {
-        console.log('Rich Presence updated via Discord API (fallback)');
+        console.log('Rich Presence updated via Discord API');
         const result = await response.json();
         console.log('Presence update result:', result);
       } else {
@@ -154,65 +124,24 @@ class DiscordRPC {
     }
   }
 
-  async clearPresence() {
-    if (!this.isConnected) {
-      return false;
-    }
-
+  async sendToDiscordTab(presenceData) {
     try {
-      console.log('Clearing Discord Presence');
-      
-      // Clear local storage
-      chrome.storage.local.remove(['lastDiscordPresence', 'lastUpdate']);
-      
-      // Try to clear Discord presence via content script
-      await this.sendToDiscordTab(null);
-      
-      // Also try to clear via Discord API if we have a token
-      if (this.token) {
-        await this.clearPresenceViaAPI();
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Failed to clear Discord presence:', error);
-      return false;
-    }
-  }
-
-  async clearPresenceViaAPI() {
-    try {
-      // Try to use desktop companion first
-      const companionResponse = await fetch('http://localhost:3000/clear', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      // Send message to Discord tab if available
+      const tabs = await chrome.tabs.query({ url: '*://discord.com/*' });
+      if (tabs.length > 0) {
+        for (const tab of tabs) {
+          try {
+            await chrome.tabs.sendMessage(tab.id, {
+              action: 'updatePresence',
+              data: presenceData
+            });
+          } catch (error) {
+            console.log('Failed to send to Discord tab:', error);
+          }
         }
-      });
-
-      if (companionResponse.ok) {
-        console.log('Rich Presence cleared via desktop companion');
-        return;
-      }
-
-      // Fallback to Discord web API
-      console.log('Desktop companion not available, using Discord web API');
-      const response = await fetch('https://discord.com/api/v9/users/@me/activities', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        console.log('Rich Presence cleared via Discord API (fallback)');
-      } else {
-        const errorText = await response.text();
-        console.log('Failed to clear presence via API:', response.status, errorText);
       }
     } catch (error) {
-      console.error('Error clearing presence via API:', error);
+      console.error('Error sending to Discord tab:', error);
     }
   }
 
@@ -229,69 +158,28 @@ class DiscordRPC {
     };
   }
 
-  async sendToDiscordTab(presenceData) {
-    try {
-      // Find Discord tabs
-      const tabs = await chrome.tabs.query({
-        url: 'https://discord.com/*'
-      });
-
-      if (tabs.length > 0) {
-        // Send presence data to Discord tabs
-        for (const tab of tabs) {
-          try {
-            await chrome.tabs.sendMessage(tab.id, {
-              type: 'UPDATE_DISCORD_PRESENCE',
-              presenceData: presenceData
-            });
-          } catch (error) {
-            console.log('Could not send to Discord tab:', error);
-          }
-        }
-      } else {
-        console.log('No Discord tabs found');
-      }
-    } catch (error) {
-      console.error('Error sending to Discord tabs:', error);
+  async clearPresence() {
+    if (!this.isConnected) {
+      return;
     }
-  }
 
-  // Helper method to create presence data from song info
-  createSongPresence(songInfo, language = 'en') {
-    const translations = this.getTranslations(language);
-    
-    return {
-      details: `${translations.listeningTo} ${songInfo.title}`,
-      state: `${translations.onSoundCloud} ${songInfo.artist}`,
-      largeImageKey: 'soundcloud',
-      largeImageText: 'SoundCloud',
-      smallImageKey: 'play',
-      smallImageText: 'Listening',
-      startTimestamp: Date.now(),
-      buttons: [
-        {
-          label: translations.viewOnSoundCloud,
-          url: songInfo.url
-        }
-      ]
-    };
-  }
-
-  getTranslations(language) {
-    const translations = {
-      en: {
-        listeningTo: 'Listening to',
-        onSoundCloud: 'on SoundCloud',
-        viewOnSoundCloud: 'View on SoundCloud'
-      },
-      ja: {
-        listeningTo: '聴いている',
-        onSoundCloud: 'SoundCloudで',
-        viewOnSoundCloud: 'SoundCloudで見る'
+    try {
+      // Clear presence via API
+      if (this.token) {
+        await fetch('https://discord.com/api/v9/users/@me/activities', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${this.token}`
+          }
+        });
       }
-    };
-
-    return translations[language] || translations.en;
+      
+      // Clear from storage
+      chrome.storage.local.remove(['lastDiscordPresence', 'currentPresence']);
+      console.log('Discord presence cleared');
+    } catch (error) {
+      console.error('Failed to clear Discord presence:', error);
+    }
   }
 }
 
@@ -396,7 +284,7 @@ class DiscordRichPresence {
     
     return {
       details: `${translations.listeningTo} ${songInfo.title}`,
-      state: `${translations.onSoundCloud} ${songInfo.artist}`,
+      state: `${translations.onSoundCloud}`,
       largeImageKey: 'soundcloud',
       largeImageText: 'SoundCloud',
       smallImageKey: 'play',
@@ -427,23 +315,6 @@ class DiscordRichPresence {
 
     return translations[language] || translations.en;
   }
-
-  // Method to check if Discord is running
-  async checkDiscordStatus() {
-    // In a real implementation, you would check if Discord is running
-    // For now, we'll assume it's always available
-    return true;
-  }
-
-  // Method to get Discord user info
-  async getUserInfo() {
-    // In a real implementation, you would get the current Discord user info
-    return {
-      id: 'user_id',
-      username: 'username',
-      discriminator: '0000'
-    };
-  }
 }
 
 class DiscordPresenceManager {
@@ -451,326 +322,56 @@ class DiscordPresenceManager {
     this.currentSong = null;
     this.settings = {
       language: 'en',
-      enablePresence: true,
       showButton: true,
-      autoToggle: true
+      enablePresence: true,
+      autoToggle: false
     };
-    this.presenceInterval = null;
-    this.discordRPC = null;
     this.token = null;
     this.userInfo = null;
-    this.init();
+    this.discordRPC = null;
   }
 
-  async init() {
+  async initialize() {
+    console.log('=== Background Script: Initializing Discord Presence Manager ===');
+    
+    // Load settings from storage
     await this.loadSettings();
-    this.setupMessageListeners();
-    this.startPresenceMonitoring();
+    
+    // Initialize Discord RPC
+    this.discordRPC = new DiscordRPC();
+    await this.discordRPC.initialize(this.token, this.userInfo);
+    
+    console.log('Discord Presence Manager initialized');
   }
 
   async loadSettings() {
-    const stored = await chrome.storage.sync.get({
-      language: 'en',
-      enablePresence: true,
-      showButton: true,
-      autoToggle: true,
-      discordToken: null,
-      discordUser: null
-    });
-    this.settings = stored;
-    this.token = stored.discordToken;
-    this.userInfo = stored.discordUser;
-    console.log('Loaded settings:', this.settings);
-  }
-
-  setupMessageListeners() {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      switch (message.type) {
-        case 'SONG_DETECTED':
-          this.handleSongDetected(message.songInfo, message.isActive);
-          break;
-        case 'SETTINGS_UPDATED':
-          this.handleSettingsUpdated(message.settings);
-          break;
-        case 'GET_STATUS':
-          this.handleGetStatus(sendResponse);
-          return true; // Keep message channel open for async response
-        case 'TEST_PRESENCE':
-          this.handleTestPresence(message.settings);
-          break;
-        case 'TOGGLE_PRESENCE':
-          this.handleTogglePresence(message.enablePresence);
-          break;
-        case 'INIT_DISCORD_RPC':
-          this.handleInitDiscordRPC(message, sendResponse);
-          return true; // Keep message channel open for async response
-        case 'CLEAR_DISCORD_RPC':
-          this.handleClearDiscordRPC(sendResponse);
-          return true; // Keep message channel open for async response
-        case 'DISCORD_OAUTH_REQUEST':
-          this.handleDiscordOAuth(message, sendResponse);
-          return true; // Keep message channel open for async response
-        case 'OAUTH_CODE_RECEIVED':
-          this.handleOAuthCodeReceived(message, sendResponse);
-          return true; // Keep message channel open for async response
-        case 'RESTORE_LAST_STATE':
-          this.handleRestoreLastState(message, sendResponse);
-          return true; // Keep message channel open for async response
-        case 'SHOW_DEFAULT_INTERFACE':
-          this.handleShowDefaultInterface(sendResponse);
-          return true; // Keep message channel open for async response
-        case 'SAVE_CURRENT_STATE':
-          this.handleSaveCurrentState(message, sendResponse);
-          return true; // Keep message channel open for async response
-      }
-    });
-  }
-
-  async handleInitDiscordRPC(message, sendResponse) {
     try {
-      console.log('Initializing Discord RPC with token and user info');
-      
-      const { token, userInfo } = message;
-      
-      if (token && userInfo) {
-        const success = await this.discordRPC.initialize(token, userInfo);
-        
-        if (success) {
-          console.log('Discord RPC initialized successfully');
-          sendResponse({ success: true, message: 'Discord RPC initialized' });
-        } else {
-          console.log('Discord RPC initialization failed');
-          sendResponse({ success: false, message: 'Discord RPC initialization failed' });
-        }
-      } else {
-        console.log('No token or user info provided for Discord RPC');
-        sendResponse({ success: false, message: 'No authentication data provided' });
+      const result = await chrome.storage.local.get(['settings', 'token', 'userInfo']);
+      if (result.settings) {
+        this.settings = { ...this.settings, ...result.settings };
       }
+      if (result.token) {
+        this.token = result.token;
+      }
+      if (result.userInfo) {
+        this.userInfo = result.userInfo;
+      }
+      console.log('Loaded settings:', this.settings);
     } catch (error) {
-      console.error('Error initializing Discord RPC:', error);
-      sendResponse({ success: false, message: 'Error initializing Discord RPC' });
+      console.error('Failed to load settings:', error);
     }
   }
 
-  async handleDiscordOAuth(message, sendResponse) {
+  async saveSettings() {
     try {
-      console.log('Desktop companion approach - no OAuth needed');
-      sendResponse({ success: true, message: 'Using desktop companion - no OAuth required' });
-    } catch (error) {
-      console.error('Error handling OAuth request:', error);
-      sendResponse({ success: false, message: 'OAuth not needed with desktop companion' });
-    }
-  }
-
-  async handleOAuthCodeReceived(message, sendResponse) {
-    try {
-      console.log('OAuth code received:', message.code);
-      
-      // Use Vercel API for secure token exchange
-      const vercelApiUrl = 'https://soundcords.vercel.app/api/discord-oauth';
-      
-      const response = await fetch(vercelApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: message.code,
-          redirectUri: 'https://soundcords.vercel.app/oauth-callback.html'
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Vercel API error:', response.status, errorData);
-        throw new Error('Failed to exchange code for token');
-      }
-      
-      const result = await response.json();
-      console.log('OAuth result from Vercel:', result);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'OAuth failed');
-      }
-      
-      // Save user info and token
-      await chrome.storage.sync.set({
-        isConnected: true,
-        discordToken: result.accessToken,
-        discordUser: result.userInfo,
-        refreshToken: result.refreshToken,
-        tokenExpiresAt: Date.now() + (result.expiresIn * 1000)
-      });
-      
-      // Close OAuth tab
-      if (this.oauthTabId) {
-        try {
-          await chrome.tabs.remove(this.oauthTabId);
-        } catch (error) {
-          console.warn('Could not close OAuth tab:', error);
-        }
-      }
-      
-      sendResponse({ success: true, userInfo: result.userInfo });
-    } catch (error) {
-      console.error('Failed to handle OAuth code:', error);
-      sendResponse({ success: false, message: 'Failed to complete OAuth' });
-    }
-  }
-
-  async handleClearDiscordRPC(sendResponse) {
-    try {
-      console.log('Clearing Discord RPC...');
-      
-      // Clear Discord RPC connection
-      if (this.discordRPC) {
-        await this.discordRPC.clearPresence();
-        this.discordRPC = null;
-      }
-      
-      // Clear stored data
-      this.token = null;
-      this.userInfo = null;
-      
-      console.log('Discord RPC cleared successfully');
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('Failed to clear Discord RPC:', error);
-      sendResponse({ success: false, error: error.message });
-    }
-  }
-
-  async handleRestoreLastState(message, sendResponse) {
-    try {
-      console.log('Restoring last state:', message.pageState, message.activeTab);
-      
-      // Send message to popup to restore state
-      chrome.runtime.sendMessage({
-        type: 'RESTORE_LAST_STATE',
-        pageState: message.pageState,
-        activeTab: message.activeTab
-      });
-      
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('Failed to restore last state:', error);
-      sendResponse({ success: false, error: error.message });
-    }
-  }
-
-  async handleShowDefaultInterface(sendResponse) {
-    try {
-      console.log('Showing default interface');
-      
-      // Send message to popup to show default interface
-      chrome.runtime.sendMessage({
-        type: 'SHOW_DEFAULT_INTERFACE'
-      });
-      
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('Failed to show default interface:', error);
-      sendResponse({ success: false, error: error.message });
-    }
-  }
-
-  async handleSaveCurrentState(message, sendResponse) {
-    try {
-      console.log('Saving current state:', message.pageState, message.activeTab);
-      
-      // Save state to storage
       await chrome.storage.local.set({
-        lastPageState: message.pageState,
-        lastActiveTab: message.activeTab,
-        lastSaveTime: Date.now()
+        settings: this.settings,
+        token: this.token,
+        userInfo: this.userInfo
       });
-      
-      sendResponse({ success: true });
+      console.log('Settings saved');
     } catch (error) {
-      console.error('Failed to save current state:', error);
-      sendResponse({ success: false, error: error.message });
-    }
-  }
-
-  handleSongDetected(songInfo, isActive) {
-    console.log('=== Background Script: Song detected ===');
-    console.log('Song info:', songInfo);
-    console.log('Is active:', isActive);
-    
-    this.currentSong = songInfo;
-    
-    // Always update presence when song is detected (auto toggle is the default behavior)
-    if (isActive) {
-      console.log('✅ Song is playing, updating Discord presence');
-      this.updateDiscordPresence(songInfo);
-    } else {
-      console.log('❌ Song stopped, clearing Discord presence');
-      this.clearDiscordPresence();
-    }
-
-    // Notify popup if open
-    this.notifyPopup();
-  }
-
-  handleSettingsUpdated(settings) {
-    this.settings = settings;
-    
-    // If auto toggle is enabled, don't manually control presence
-    if (this.settings.autoToggle) {
-      // Let the song detection handle presence automatically
-      return;
-    }
-    
-    // Manual mode: use the enablePresence setting
-    if (this.currentSong && settings.enablePresence) {
-      this.updateDiscordPresence(this.currentSong);
-    } else {
-      this.clearDiscordPresence();
-    }
-  }
-
-  handleGetStatus(sendResponse) {
-    sendResponse({
-      active: !!this.currentSong,
-      songInfo: this.currentSong
-    });
-  }
-
-  async handleTestPresence(testSettings) {
-    const testSong = {
-      title: 'Test Song',
-      artist: 'Test Artist',
-      url: 'https://soundcloud.com/test'
-    };
-
-    const tempSettings = { ...this.settings, ...testSettings };
-    this.updateDiscordPresence(testSong, tempSettings);
-
-    // Clear test presence after 5 seconds
-    setTimeout(() => {
-      this.clearDiscordPresence();
-    }, 5000);
-  }
-
-  handleTogglePresence(enablePresence) {
-    console.log('Toggling presence:', enablePresence ? 'ON' : 'OFF');
-    
-    // Update the settings
-    this.settings.enablePresence = enablePresence;
-    
-    // If auto toggle is enabled, don't manually control presence
-    if (this.settings.autoToggle) {
-      console.log('Auto toggle is enabled, letting song detection handle presence');
-      return;
-    }
-    
-    // Manual mode: immediately update presence based on current song
-    if (this.currentSong && enablePresence) {
-      console.log('Enabling presence for current song');
-      this.updateDiscordPresence(this.currentSong);
-    } else {
-      console.log('Disabling presence');
-      this.clearDiscordPresence();
+      console.error('Failed to save settings:', error);
     }
   }
 
@@ -784,11 +385,10 @@ class DiscordPresenceManager {
     console.log('Updating Discord presence for song:', songInfo.title);
 
     const presenceData = {
-      type: 'rich',
-      details: `Listening to ${songInfo.title}`,
-      state: `${songInfo.artist} On Soundcords`,
+      details: songInfo.title, // Just the song title
+      state: songInfo.artist,  // Just the artist
       largeImageKey: 'soundcloud',
-      largeImageText: songInfo.title,
+      largeImageText: 'SoundCloud',
       smallImageKey: 'play',
       smallImageText: 'Listening',
       startTimestamp: Date.now()
@@ -808,29 +408,6 @@ class DiscordPresenceManager {
     this.sendPresenceToDiscord(presenceData);
   }
 
-  async clearDiscordPresence() {
-    try {
-      // Try to use desktop companion first
-      const companionResponse = await fetch('http://localhost:3000/clear', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (companionResponse.ok) {
-        console.log('Rich Presence cleared via desktop companion');
-      } else {
-        console.log('Desktop companion not available for clearing');
-      }
-    } catch (error) {
-      console.error('Failed to clear Discord presence:', error);
-    }
-
-    // Also clear local storage
-    chrome.storage.local.remove(['currentPresence', 'lastUpdate']);
-  }
-
   async sendPresenceToDiscord(presenceData) {
     console.log('=== Background Script: Sending Presence to Discord ===');
     console.log('Presence data:', presenceData);
@@ -845,8 +422,8 @@ class DiscordPresenceManager {
         },
         body: JSON.stringify({
           songInfo: {
-            title: presenceData.details.replace('Listening to ', ''),
-            artist: presenceData.state.replace(' On Soundcords', ''),
+            title: presenceData.details, // Song Title
+            artist: presenceData.state,  // Artist
             url: presenceData.buttons?.[0]?.url || this.currentSong?.url || 'https://soundcloud.com'
           },
           isActive: true
@@ -874,10 +451,10 @@ class DiscordPresenceManager {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          name: presenceData.name,
+          name: "SoundCloud", // Application name
           type: 2, // Listening activity type for music
-          state: presenceData.state,
-          details: presenceData.details,
+          state: presenceData.state, // Artist
+          details: presenceData.details, // Song Title
           timestamps: presenceData.startTimestamp ? {
             start: presenceData.startTimestamp
           } : undefined,
@@ -937,201 +514,107 @@ class DiscordPresenceManager {
     return translations[language] || translations.en;
   }
 
-  startPresenceMonitoring() {
-    // Check for active SoundCloud tabs periodically
-    this.presenceInterval = setInterval(async () => {
-      const tabs = await chrome.tabs.query({
-        url: 'https://soundcloud.com/*',
-        active: true
-      });
-
-      if (tabs.length === 0) {
-        // No active SoundCloud tabs, clear presence
-        if (this.currentSong) {
-          this.currentSong = null;
-          this.clearDiscordPresence();
-          this.notifyPopup();
-        }
-      }
-    }, 10000); // Check every 10 seconds
-  }
-
-  notifyPopup() {
+  // Additional methods for the DiscordPresenceManager class
+  async updateSongInfo(songInfo) {
+    this.currentSong = songInfo;
+    
+    if (songInfo && this.settings.enablePresence) {
+      this.updateDiscordPresence(this.currentSong);
+    }
+    
+    // Update popup with new song info
     chrome.runtime.sendMessage({
-      type: 'SONG_UPDATED',
-      songInfo: this.currentSong
-    }).catch(() => {
-      // Popup might not be open, ignore error
+      action: 'updatePopup',
+      data: {
+        active: !!this.currentSong,
+        songInfo: this.currentSong
+      }
     });
   }
 
-  cleanup() {
-    if (this.presenceInterval) {
-      clearInterval(this.presenceInterval);
+  async updateSettings(settings) {
+    this.settings = settings;
+    await this.saveSettings();
+    
+    if (this.settings.autoToggle) {
+      // Handle auto toggle logic
     }
-    this.clearDiscordPresence();
+  }
+
+  async testPresence(testSettings = {}) {
+    const testSong = {
+      title: 'Test Song',
+      artist: 'Test Artist',
+      url: 'https://soundcloud.com/test'
+    };
+    
+    const tempSettings = { ...this.settings, ...testSettings };
+    this.updateDiscordPresence(testSong, tempSettings);
+  }
+
+  async togglePresence(enablePresence) {
+    console.log('togglePresence called with enablePresence:', enablePresence);
+    
+    this.settings.enablePresence = enablePresence;
+    await this.saveSettings();
+    
+    console.log('Settings updated, enablePresence:', this.settings.enablePresence);
+    
+    if (this.settings.autoToggle) {
+      // Handle auto toggle logic
+    }
+    
+    if (this.currentSong && enablePresence) {
+      console.log('Updating Discord presence with current song');
+      this.updateDiscordPresence(this.currentSong);
+    } else {
+      console.log('No current song or presence disabled');
+    }
   }
 }
 
-// Initialize the presence manager
-const presenceManager = new DiscordPresenceManager();
-presenceManager.init();
+// Initialize the Discord Presence Manager
+const discordPresenceManager = new DiscordPresenceManager();
+discordPresenceManager.initialize();
 
-// Listen for OAuth success messages from the callback page
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.type === 'DISCORD_OAUTH_SUCCESS') {
-    console.log('OAuth success received from callback page:', message);
-    
-    try {
-      // Handle the OAuth success
-      const { data } = message;
-      
-      // Save user info and token
-      await chrome.storage.sync.set({
-        isConnected: true,
-        discordToken: data.accessToken,
-        discordUser: data.userInfo,
-        refreshToken: data.refreshToken,
-        tokenExpiresAt: Date.now() + (data.expiresIn * 1000)
-      });
-      
-      // Initialize Discord RPC with the new token
-      await presenceManager.handleInitDiscordRPC({
-        token: data.accessToken,
-        userInfo: data.userInfo
-      }, (response) => {
-        console.log('Discord RPC initialization response:', response);
-        if (response && response.success) {
-          console.log('Discord RPC initialized successfully');
-        } else {
-          console.log('Discord RPC initialization failed');
-        }
-      });
-      
-      // Close the OAuth tab if it exists
-      if (presenceManager.oauthWindowId) {
-        try {
-          await chrome.windows.remove(presenceManager.oauthWindowId);
-        } catch (error) {
-          console.warn('Could not close OAuth window:', error);
-        }
-      }
-      
-      // Notify the popup that connection was successful
-      chrome.runtime.sendMessage({
-        type: 'DISCORD_CONNECTION_SUCCESS',
-        userInfo: data.userInfo
-      }).catch(() => {
-        // Popup might not be open, ignore error
-      });
-      
-      // Send response back to the callback page
+// Listen for messages from content scripts and popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('Background script received message:', message);
+  
+  switch (message.action) {
+    case 'updateSong':
+      discordPresenceManager.updateSongInfo(message.songInfo);
       sendResponse({ success: true });
+      break;
       
-    } catch (error) {
-      console.error('Failed to handle OAuth success:', error);
-      sendResponse({ success: false, error: error.message });
-    }
-    
-    return true; // Keep the message channel open for async response
-  }
-});
-
-// Listen for tab updates to detect OAuth completion
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  // Check if this is our OAuth callback page
-  if (presenceManager.oauthTabId && tabId === presenceManager.oauthTabId && changeInfo.status === 'complete') {
-    const url = new URL(tab.url);
-    
-    // Check if we have a code parameter (successful OAuth)
-    if (url.searchParams.has('code')) {
-      const code = url.searchParams.get('code');
-      console.log('OAuth code detected in callback page:', code);
+    case 'updateSettings':
+      discordPresenceManager.updateSettings(message.settings);
+      sendResponse({ success: true });
+      break;
       
-      try {
-        // Process the OAuth code
-        const vercelApiUrl = 'https://soundcords.vercel.app/api/discord-oauth';
-        
-        const response = await fetch(vercelApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code: code,
-            redirectUri: 'https://soundcords.vercel.app/oauth-callback.html'
-          }),
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.text();
-          console.error('Vercel API error:', response.status, errorData);
-          throw new Error('Failed to exchange code for token');
-        }
-        
-        const result = await response.json();
-        console.log('OAuth result from Vercel:', result);
-        
-        if (!result.success) {
-          throw new Error(result.error || 'OAuth failed');
-        }
-        
-        // Save user info and token
-        await chrome.storage.sync.set({
-          isConnected: true,
-          discordToken: result.accessToken,
-          discordUser: result.userInfo,
-          refreshToken: result.refreshToken,
-          tokenExpiresAt: Date.now() + (result.expiresIn * 1000)
-        });
-        
-        // Initialize Discord RPC with the new token
-        await presenceManager.handleInitDiscordRPC({
-          token: result.accessToken,
-          userInfo: result.userInfo
-        }, (response) => {
-          console.log('Discord RPC initialization response:', response);
-          if (response && response.success) {
-            console.log('Discord RPC initialized successfully');
-          } else {
-            console.log('Discord RPC initialization failed');
-          }
-        });
-        
-        // Close the OAuth tab
-        try {
-          await chrome.tabs.remove(presenceManager.oauthTabId);
-          presenceManager.oauthTabId = null;
-        } catch (error) {
-          console.warn('Could not close OAuth tab:', error);
-        }
-        
-        // Notify the popup that connection was successful
-        chrome.runtime.sendMessage({
-          type: 'DISCORD_CONNECTION_SUCCESS',
-          userInfo: result.userInfo
-        }).catch(() => {
-          // Popup might not be open, ignore error
-        });
-        
-        console.log('OAuth flow completed successfully');
-        
-      } catch (error) {
-        console.error('Failed to process OAuth code:', error);
-        
-        // Close the OAuth tab even on error
-        try {
-          await chrome.tabs.remove(presenceManager.oauthTabId);
-          presenceManager.oauthTabId = null;
-        } catch (closeError) {
-          console.warn('Could not close OAuth tab:', closeError);
-        }
-      }
-    }
+    case 'testPresence':
+      discordPresenceManager.testPresence(message.testSettings);
+      sendResponse({ success: true });
+      break;
+      
+    case 'togglePresence':
+      console.log('Background script received togglePresence message:', message);
+      discordPresenceManager.togglePresence(message.enablePresence);
+      sendResponse({ success: true });
+      break;
+      
+    case 'getCurrentSong':
+      sendResponse({ songInfo: discordPresenceManager.currentSong });
+      break;
+      
+    case 'getSettings':
+      sendResponse({ settings: discordPresenceManager.settings });
+      break;
+      
+    default:
+      console.log('Unknown message action:', message.action);
+      sendResponse({ success: false, error: 'Unknown action' });
   }
+  
+  return true; // Keep the message channel open for async response
 });
-
-// Cleanup on extension unload
-chrome.runtime.onSuspend.addListener(() => {
-  presenceManager.cleanup();
-}); 
