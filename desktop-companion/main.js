@@ -12,7 +12,7 @@ class SoundcordsCompanion {
     this.currentPresence = null;
     
     // WebSocket server for real-time communication with extension
-    this.wss = new WebSocket.Server({ port: 8080 });
+    this.wss = new WebSocket.Server({ port: 8081 });
     
     // HTTP server for REST API communication
     this.app = express();
@@ -362,4 +362,4 @@ process.on('SIGINT', () => {
 console.log('Soundcords Desktop Companion starting...');
 console.log('Make sure Discord desktop app is running!');
 console.log('HTTP API: http://localhost:3000');
-console.log('WebSocket: ws://localhost:8080'); 
+console.log('WebSocket: ws://localhost:8081'); 
